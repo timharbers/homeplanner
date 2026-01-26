@@ -259,7 +259,8 @@ env = [
   "RATE_LIMIT_ENABLED=false",
 ]
 
-asyncio_default_fixture_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_mode = "auto"
 
 
 [tool.coverage.run]

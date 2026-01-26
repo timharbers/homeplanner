@@ -21,5 +21,6 @@ class UserResponse(UserBase):
 class MyUserResponse(UserBase):
     """Response for non-admin getting their own User data."""
 
+    id: int = Field(ExampleUser.id)
     first_name: str = Field(examples=[ExampleUser.first_name])
     last_name: str = Field(examples=[ExampleUser.last_name])

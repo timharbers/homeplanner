@@ -56,7 +56,7 @@ class TestUserRoutes:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.json()) == 3  # noqa: PLR2004
+        assert len(response.json()) == 4  # noqa: PLR2004
 
     async def test_get_my_profile_no_auth(
         self, client: AsyncClient, test_db: AsyncSession
@@ -893,6 +893,7 @@ class TestUserRoutes:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
+            "id": 1,
             "email": "new@example.com",
             "first_name": "new_name",
             "last_name": "new_surname",

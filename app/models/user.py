@@ -30,6 +30,12 @@ class User(Base):
     api_keys = relationship(
         "ApiKey", back_populates="user", cascade="all, delete"
     )
+    households = relationship(
+        "Household",
+        secondary="household_members",
+        back_populates="members",
+        viewonly=True,
+    )
 
     def __repr__(self) -> str:
         """Define the model representation."""

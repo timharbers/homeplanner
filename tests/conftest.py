@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from typing import TYPE_CHECKING, Any
+
+if os.name == "nt":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 import pytest
 import pytest_asyncio
@@ -26,10 +30,17 @@ if TYPE_CHECKING:
     )
 
 
-# Create session maker using the function that handles environment detection
-# Pass use_test_db=True to ensure we use the test database
-async_test_session = create_session_maker(use_test_db=True)
-async_engine = async_test_session.kw["bind"]
+
+@pytest.fixture(scope="session")
+def async_test_sessionmaker():
+    """Return a sessionmaker bound to the test database."""
+    return create_session_maker(use_test_db=True)
+
+
+@pytest.fixture(scope="session")
+def async_engine(async_test_sessionmaker):
+    """Return the async engine for the test database."""
+    return async_test_sessionmaker.kw["bind"]
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -59,7 +70,7 @@ async def init_and_clear_cache() -> None:
 
 # reset the database before each test
 @pytest_asyncio.fixture(autouse=True, scope="function")
-async def reset_db() -> None:
+async def reset_db(async_engine) -> None:
     """Reset the database."""
     # Close any existing connections
     await async_engine.dispose()
@@ -71,16 +82,20 @@ async def reset_db() -> None:
 
 
 # Override the database connection to use the test database
-async def get_database_override() -> AsyncGenerator[AsyncSession, Any]:
+async def get_database_override(
+    async_test_sessionmaker,
+) -> AsyncGenerator[AsyncSession, Any]:
     """Return the database connection for testing."""
-    async with async_test_session() as session, session.begin():
+    async with async_test_sessionmaker() as session, session.begin():
         yield session
 
 
 @pytest_asyncio.fixture()
-async def test_db() -> AsyncGenerator[AsyncSession, Any]:
+async def test_db(
+    async_test_sessionmaker,
+) -> AsyncGenerator[AsyncSession, Any]:
     """Fixture to yield a database connection for testing."""
-    async with async_test_session() as session, session.begin():
+    async with async_test_sessionmaker() as session, session.begin():
         yield session
 
 

@@ -57,5 +57,9 @@
   "ruff.organizeImports": true,
   "terminal.integrated.defaultProfile.linux": "bash",
   "terminal.integrated.shellIntegration.enabled": true,
-  "codeQL.githubDatabase.download": "never"
+  "codeQL.githubDatabase.download": "never",
+  "cursorpyright.analysis.autoImportCompletions": true,
+  "cursorpyright.analysis.extraPaths": [],
+  "cursorpyright.analysis.stubPath": "/home/seapagan/stubs",
+  "cursorpyright.analysis.typeCheckingMode": "off"
 }

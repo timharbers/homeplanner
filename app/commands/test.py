@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.database.db import Base, get_database_url
 
+from app.models import floor, household, invitation, room, task
+
 app = typer.Typer(no_args_is_help=True, rich_markup_mode="rich")
 
 async_engine = create_async_engine(

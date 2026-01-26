@@ -13,7 +13,7 @@ logger = logging.getLogger("uvicorn")
 
 def get_project_root() -> Path:
     """Return the full path of the project root."""
-    return (Path(str(resources.files("app"))) / "..").resolve()
+    return Path(str(resources.files("app"))).parent
 
 
 def get_toml_path() -> Path:

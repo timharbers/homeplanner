@@ -49,4 +49,6 @@ def root_path(
 @router.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> FileResponse:
     """Serve the favicon for the API."""
-    return FileResponse("static/favicon.ico")
+    return FileResponse(
+        "static/favicon.ico", media_type="image/vnd.microsoft.icon"
+    )
