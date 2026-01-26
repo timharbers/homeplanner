@@ -69,6 +69,7 @@ class TestAdminAuth:
         assert "Username" in response.text
         assert "Password" in response.text
 
+
     async def test_admin_login_ok(
         self, client: AsyncClient, test_db: AsyncSession, mocker
     ) -> None:
