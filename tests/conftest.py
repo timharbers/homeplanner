@@ -27,6 +27,15 @@ from app.database.db import Base, get_database, get_database_url
 from app.main import app
 from app.managers.email import EmailManager
 
+# Module-level sessionmaker for tests that import it directly
+# Uses NullPool to avoid event loop issues
+_test_engine = create_async_engine(
+    get_database_url(use_test_db=True),
+    echo=False,
+    poolclass=NullPool,
+)
+async_test_session = async_sessionmaker(_test_engine, expire_on_commit=False)
+
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
