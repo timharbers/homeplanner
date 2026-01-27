@@ -206,27 +206,3 @@ async def get_room_stats(
     )
 
 
-@router.get(
-    "/{room_id}/tasks/count",
-    dependencies=[Depends(get_current_user)],
-    summary="Get room task count",
-    description="Fetch number of tasks assigned to a room.",
-)
-async def get_room_task_count(
-    room_id: UUID,
-    db: Annotated[AsyncSession, Depends(get_database)],
-) -> dict[str, int]:
-    """Get task count for a room."""
-    room = await db.get(Room, room_id)
-    if not room:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
-        )
-    count = (
-        await db.execute(
-            select(func.count()).select_from(task_rooms).where(
-                task_rooms.c.room_id == room_id
-            )
-        )
-    ).scalar_one()
-    return {"count": count}

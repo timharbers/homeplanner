@@ -13,7 +13,6 @@ from app.cache.invalidation import (
     invalidate_api_keys_cache,
     invalidate_namespace,
     invalidate_user_cache,
-    invalidate_users_list_cache,
 )
 from app.cache.key_builders import (
     api_key_single_key_builder,
@@ -21,7 +20,6 @@ from app.cache.key_builders import (
     paginated_key_builder,
     user_paginated_key_builder,
     user_scoped_key_builder,
-    users_list_key_builder,
 )
 
 
@@ -150,42 +148,6 @@ class TestKeyBuilders:
 
         assert key == "items:list_items:page:1:size:50"
 
-    def test_users_list_key_builder_single_user(self) -> None:
-        """Test users list key builder for single user lookup."""
-        mock_request = MagicMock(spec=Request)
-        mock_request.query_params = {"user_id": "456"}
-
-        mock_func = MagicMock(__name__="get_users")
-
-        key = users_list_key_builder(
-            func=mock_func,
-            namespace="users",
-            request=mock_request,
-            response=MagicMock(spec=Response),
-            args=(),
-            kwargs={},
-        )
-
-        assert key == "users:456:single"
-
-    def test_users_list_key_builder_paginated(self) -> None:
-        """Test users list key builder for paginated list."""
-        mock_request = MagicMock(spec=Request)
-        mock_request.query_params = {"page": "3", "size": "25"}
-
-        mock_func = MagicMock(__name__="get_users")
-
-        key = users_list_key_builder(
-            func=mock_func,
-            namespace="users",
-            request=mock_request,
-            response=MagicMock(spec=Response),
-            args=(),
-            kwargs={"user_id": None},
-        )
-
-        assert key == "users:list:page:3:size:25"
-
     def test_api_keys_list_key_builder_regular_user(self) -> None:
         """Test API keys list builder for regular user endpoint."""
         mock_request = MagicMock(spec=Request)
@@ -306,35 +268,6 @@ class TestInvalidationFunctions:
         assert mock_clear.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_invalidate_users_list_cache_success(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test successful users list cache invalidation."""
-        mock_clear = mocker.patch.object(
-            FastAPICache, "clear", new_callable=AsyncMock
-        )
-
-        await invalidate_users_list_cache()
-
-        mock_clear.assert_called_once_with(namespace="users:list")
-
-    @pytest.mark.asyncio
-    async def test_invalidate_users_list_cache_os_error(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test users list cache invalidation handles OS errors."""
-        mock_clear = mocker.patch.object(
-            FastAPICache,
-            "clear",
-            new_callable=AsyncMock,
-            side_effect=OSError("I/O error"),
-        )
-
-        # Should not raise exception
-        await invalidate_users_list_cache()
-
-        assert mock_clear.call_count == 1
-
     @pytest.mark.asyncio
     async def test_invalidate_api_keys_cache_success(
         self, mocker: MockerFixture

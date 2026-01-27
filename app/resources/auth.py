@@ -18,7 +18,6 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.templating import _TemplateResponse
 
-from app.cache import invalidate_users_list_cache
 from app.config.helpers import get_project_root
 from app.config.settings import get_settings
 from app.database.db import get_database
@@ -76,8 +75,6 @@ async def register(
         session=session,
         background_tasks=background_tasks,
     )
-    # Invalidate users list cache after registration
-    await invalidate_users_list_cache()
     return {"token": token, "refresh": refresh}
 
 

@@ -29,7 +29,6 @@ class TestProtectedUserRoutes:
     }
 
     test_routes = [
-        ["/users/", "get"],
         ["/users/me", "get"],
         ["/users/1/make-admin", "post"],
         ["/users/1/password", "post"],

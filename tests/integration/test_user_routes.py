@@ -73,103 +73,6 @@ class TestUserRoutes:
         }
 
     # ------------------------------------------------------------------------ #
-    #                           test get users route                           #
-    # ------------------------------------------------------------------------ #
-    async def test_admin_can_get_all_users(
-        self, client: AsyncClient, test_db: AsyncSession
-    ) -> None:
-        """Ensure an admin user can get all users.
-
-        This test will create 3 users, then create an admin user and ensure
-        it can get all users.
-        """
-        for i in range(3):
-            user_data = self.get_test_user()
-            if i > 0:
-                user_data["email"] = f"user{i}@test.com"
-            test_user = User(**user_data)
-            test_db.add(test_user)
-
-        admin_user = User(**self.get_test_user(admin=True))
-        test_db.add(admin_user)
-        await test_db.commit()
-        token = AuthManager.encode_token(admin_user)
-
-        response = await client.get(
-            "/users/", headers={"Authorization": f"Bearer {token}"}
-        )
-
-        assert response.status_code == status.HTTP_200_OK
-        payload = response.json()
-        assert payload["total"] == 4  # noqa: PLR2004
-        assert len(payload["items"]) == 4  # noqa: PLR2004
-
-    async def test_admin_can_get_one_user(
-        self, client: AsyncClient, test_db: AsyncSession
-    ) -> None:
-        """Ensure an admin user can get one users."""
-        for i in range(3):
-            user_data = self.get_test_user()
-            if i > 0:
-                user_data["email"] = f"user{i}@test.com"
-            test_user = User(**user_data)
-            test_db.add(test_user)
-
-        admin_user = User(**self.get_test_user(admin=True))
-        test_db.add(admin_user)
-        await test_db.commit()
-        token = AuthManager.encode_token(admin_user)
-
-        response = await client.get(
-            "/users/?user_id=3", headers={"Authorization": f"Bearer {token}"}
-        )
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json()["id"] == 3  # noqa: PLR2004
-
-    async def test_user_cant_get_all_users(
-        self, client: AsyncClient, test_db: AsyncSession
-    ) -> None:
-        """Test we can't get all users if not admin."""
-        for i in range(3):
-            user_data = self.get_test_user()
-            if i > 0:
-                user_data["email"] = f"user{i}@test.com"
-            test_user = User(**user_data)
-            test_db.add(test_user)
-        token = AuthManager.encode_token(User(id=1))
-
-        await test_db.commit()
-
-        response = await client.get(
-            "/users/", headers={"Authorization": f"Bearer {token}"}
-        )
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert response.json() == {"detail": "Forbidden"}
-
-    async def test_user_cant_get_single_user(
-        self, client: AsyncClient, test_db: AsyncSession
-    ) -> None:
-        """Test we can't get all users if not admin."""
-        for i in range(3):
-            user_data = self.get_test_user()
-            if i > 0:
-                user_data["email"] = f"user{i}@test.com"
-            test_user = User(**user_data)
-            test_db.add(test_user)
-        token = AuthManager.encode_token(User(id=1))
-
-        await test_db.commit()
-
-        response = await client.get(
-            "/users/?user_id=2", headers={"Authorization": f"Bearer {token}"}
-        )
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert response.json() == {"detail": "Forbidden"}
-
-    # ------------------------------------------------------------------------ #
     #                           test make_admin route                          #
     # ------------------------------------------------------------------------ #
     async def test_make_admin_as_admin(
@@ -189,14 +92,11 @@ class TestUserRoutes:
             "/users/1/make-admin",
             headers={"Authorization": f"Bearer {token}"},
         )
-        new_admin = await client.get(
-            "/users/?user_id=1",
-            headers={"Authorization": f"Bearer {token}"},
-        )
 
         assert upgrade_user.status_code == status.HTTP_204_NO_CONTENT
-        assert new_admin.status_code == status.HTTP_200_OK
-        assert new_admin.json()["role"] == RoleType.admin.value
+        updated_user = await test_db.get(User, 1, populate_existing=True)
+        assert updated_user is not None
+        assert updated_user.role == RoleType.admin
 
     async def test_cant_make_admin_as_user(
         self, client: AsyncClient, test_db: AsyncSession
@@ -217,13 +117,10 @@ class TestUserRoutes:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        new_admin = await client.get(
-            "/users/?user_id=2",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
         assert upgrade_user.status_code == status.HTTP_403_FORBIDDEN
-        assert new_admin.status_code == status.HTTP_403_FORBIDDEN
+        updated_user = await test_db.get(User, 2, populate_existing=True)
+        assert updated_user is not None
+        assert updated_user.role == RoleType.user
 
     # ------------------------------------------------------------------------ #
     #                            test ban user route                           #
@@ -246,14 +143,10 @@ class TestUserRoutes:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        banned_user = await client.get(
-            "/users/?user_id=1",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
         assert banned_response.status_code == status.HTTP_204_NO_CONTENT
-        assert banned_user.status_code == status.HTTP_200_OK
-        assert banned_user.json()["banned"] is True
+        updated_user = await test_db.get(User, 1, populate_existing=True)
+        assert updated_user is not None
+        assert updated_user.banned is True
 
     async def test_admin_cant_ban_self(
         self, client: AsyncClient, test_db: AsyncSession
@@ -274,14 +167,12 @@ class TestUserRoutes:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        check_not_banned = await client.get(
-            f"/users/?user_id={admin_user_id}",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert check_not_banned.status_code == status.HTTP_200_OK
-        assert check_not_banned.json()["banned"] is False
+        updated_user = await test_db.get(
+            User, admin_user_id, populate_existing=True
+        )
+        assert updated_user is not None
+        assert updated_user.banned is False
 
     async def test_user_cant_ban(
         self, client: AsyncClient, test_db: AsyncSession
@@ -305,14 +196,10 @@ class TestUserRoutes:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        banned_user = await client.get(
-            "/users/?user_id=2",
-            headers={"Authorization": f"Bearer {admin_token}"},
-        )
-
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert banned_user.status_code == status.HTTP_200_OK
-        assert banned_user.json()["banned"] is False
+        updated_user = await test_db.get(User, 2, populate_existing=True)
+        assert updated_user is not None
+        assert updated_user.banned is False
 
     async def test_admin_cant_ban_missing_user(
         self, client: AsyncClient, test_db: AsyncSession
@@ -351,14 +238,11 @@ class TestUserRoutes:
             "/users/1/unban",
             headers={"Authorization": f"Bearer {token}"},
         )
-        banned_user = await client.get(
-            "/users/?user_id=1",
-            headers={"Authorization": f"Bearer {token}"},
-        )
 
         assert unban_response.status_code == status.HTTP_204_NO_CONTENT
-        assert banned_user.status_code == status.HTTP_200_OK
-        assert banned_user.json()["banned"] is False
+        updated_user = await test_db.get(User, 1, populate_existing=True)
+        assert updated_user is not None
+        assert updated_user.banned is False
 
     async def test_admin_cant_uban_self(
         self, client: AsyncClient, test_db: AsyncSession
@@ -428,13 +312,8 @@ class TestUserRoutes:
             "/users/1",
             headers={"Authorization": f"Bearer {token}"},
         )
-
-        response = await client.get(
-            "/users/?user_id=1",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        deleted_user = await test_db.get(User, 1, populate_existing=True)
+        assert deleted_user is None
 
     async def test_non_admin_cant_delete_user(
         self, client: AsyncClient, test_db: AsyncSession
@@ -458,13 +337,9 @@ class TestUserRoutes:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        not_deleted_user = await client.get(
-            "/users/?user_id=2",
-            headers={"Authorization": f"Bearer {admin_token}"},
-        )
-
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert not_deleted_user.status_code == status.HTTP_200_OK
+        existing_user = await test_db.get(User, 2, populate_existing=True)
+        assert existing_user is not None
 
     async def test_delete_missing_user(
         self, client: AsyncClient, test_db: AsyncSession
@@ -502,11 +377,8 @@ class TestUserRoutes:
         assert response.json()["detail"] == ErrorMessages.CANT_DELETE_LAST_ADMIN
 
         # Verify user still exists
-        check_user = await client.get(
-            "/users/?user_id=1",
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        assert check_user.status_code == status.HTTP_200_OK
+        existing_user = await test_db.get(User, 1, populate_existing=True)
+        assert existing_user is not None
 
     async def test_admin_can_delete_themselves_if_multiple_admins(
         self, client: AsyncClient, test_db: AsyncSession
@@ -532,18 +404,12 @@ class TestUserRoutes:
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         # Verify admin 1 no longer exists
-        check_deleted = await client.get(
-            "/users/?user_id=1",
-            headers={"Authorization": f"Bearer {token2}"},
-        )
-        assert check_deleted.status_code == status.HTTP_404_NOT_FOUND
+        deleted_admin = await test_db.get(User, 1, populate_existing=True)
+        assert deleted_admin is None
 
         # Verify admin 2 still exists
-        check_remaining = await client.get(
-            "/users/?user_id=2",
-            headers={"Authorization": f"Bearer {token2}"},
-        )
-        assert check_remaining.status_code == status.HTTP_200_OK
+        remaining_admin = await test_db.get(User, 2, populate_existing=True)
+        assert remaining_admin is not None
 
     async def test_admin_can_delete_other_user_as_only_admin(
         self, client: AsyncClient, test_db: AsyncSession
@@ -565,11 +431,8 @@ class TestUserRoutes:
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         # Verify user no longer exists
-        check_deleted = await client.get(
-            "/users/?user_id=2",
-            headers={"Authorization": f"Bearer {admin_token}"},
-        )
-        assert check_deleted.status_code == status.HTTP_404_NOT_FOUND
+        deleted_user = await test_db.get(User, 2, populate_existing=True)
+        assert deleted_user is None
 
     async def test_admin_can_delete_another_admin_with_multiple_admins(
         self, client: AsyncClient, test_db: AsyncSession
@@ -594,18 +457,12 @@ class TestUserRoutes:
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         # Verify admin 2 no longer exists
-        check_deleted = await client.get(
-            "/users/?user_id=2",
-            headers={"Authorization": f"Bearer {admin1_token}"},
-        )
-        assert check_deleted.status_code == status.HTTP_404_NOT_FOUND
+        deleted_admin = await test_db.get(User, 2, populate_existing=True)
+        assert deleted_admin is None
 
         # Verify admin 1 still exists (use own token since admin2 is gone)
-        check_remaining = await client.get(
-            "/users/?user_id=1",
-            headers={"Authorization": f"Bearer {admin1_token}"},
-        )
-        assert check_remaining.status_code == status.HTTP_200_OK
+        remaining_admin = await test_db.get(User, 1, populate_existing=True)
+        assert remaining_admin is not None
 
     # ------------------------------------------------------------------------ #
     #                           test search route                              #

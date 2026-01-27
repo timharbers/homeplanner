@@ -54,13 +54,13 @@ class TestCacheMiddleware:
         token = AuthManager.encode_token(User(id=admin_user_id))
 
         response = await client.get(
-            "/users/",
+            "/users/me",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK
 
         response = await client.get(
-            "/users/",
+            "/users/me",
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == status.HTTP_200_OK

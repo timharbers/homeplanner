@@ -3,7 +3,7 @@
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Request, Response, status
-from fastapi_pagination import Page, Params
+from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +11,6 @@ from app.cache import (
     cached,
     invalidate_user_related_caches,
     user_scoped_key_builder,
-    users_list_key_builder,
 )
 from app.cache.constants import CacheNamespaces
 from app.database.db import get_database
@@ -20,7 +19,6 @@ from app.managers.security import get_current_user
 from app.managers.user import UserManager
 from app.models.enums import RoleType
 from app.models.user import User
-from app.schemas.examples import ExampleUser
 from app.schemas.request.user import (
     SearchField,
     UserChangePasswordRequest,
@@ -29,71 +27,6 @@ from app.schemas.request.user import (
 from app.schemas.response.user import MyUserResponse, UserResponse
 
 router = APIRouter(tags=["Users"], prefix="/users")
-
-USER_EXAMPLE = {
-    "id": ExampleUser.id,
-    "first_name": ExampleUser.first_name,
-    "last_name": ExampleUser.last_name,
-    "email": ExampleUser.email,
-    "role": ExampleUser.role,
-    "banned": ExampleUser.banned,
-    "verified": ExampleUser.verified,
-}
-
-PAGINATED_USERS_EXAMPLE = {
-    "items": [USER_EXAMPLE],
-    "total": 1,
-    "page": 1,
-    "size": 50,
-    "pages": 1,
-}
-
-
-@router.get(
-    "/",
-    dependencies=[Depends(get_current_user), Depends(is_admin)],
-    response_model=UserResponse | Page[UserResponse],
-    responses={
-        200: {
-            "content": {
-                "application/json": {
-                    "examples": {
-                        "single_user": {
-                            "summary": "Single user",
-                            "value": USER_EXAMPLE,
-                        },
-                        "paginated_users": {
-                            "summary": "Paginated users",
-                            "value": PAGINATED_USERS_EXAMPLE,
-                        },
-                    }
-                }
-            }
-        }
-    },
-)
-@cached(
-    expire=300,
-    namespace=CacheNamespaces.USERS_SINGLE,
-    key_builder=users_list_key_builder,
-)
-async def get_users(
-    request: Request,  # noqa: ARG001
-    response: Response,  # noqa: ARG001
-    db: Annotated[AsyncSession, Depends(get_database)],
-    params: Annotated[Params, Depends()],
-    user_id: int | None = None,
-) -> Page[UserResponse] | User:
-    """Get all users (paginated) or a specific user by their ID.
-
-    user_id is optional, and if omitted then all Users are returned.
-
-    This route is only allowed for Admins.
-    """
-    if user_id:
-        return await UserManager.get_user_by_id(user_id, db)
-    query = UserManager.list_users_query()
-    return cast("Page[UserResponse]", await apaginate(db, query, params))
 
 
 @router.get(

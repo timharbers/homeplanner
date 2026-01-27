@@ -25,9 +25,6 @@ class CacheNamespaces:
     # User-related namespaces
     USER_ME = "user"  # Current user data (/users/me)
     USERS_SINGLE = "users"  # Base namespace for /users/ endpoint
-    USERS_LIST = (
-        "users:list"  # Paginated list keys (built by users_list_key_builder)
-    )
 
     # API key-related namespaces
     API_KEYS_LIST = "apikeys"  # API keys list for a user

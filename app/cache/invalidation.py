@@ -68,32 +68,6 @@ async def invalidate_user_cache(user_id: int) -> None:
         )
 
 
-async def invalidate_users_list_cache() -> None:
-    """Invalidate the cached users list.
-
-    Clears all cached paginated user list entries.
-    Call this when users are created, deleted, or have role changes.
-
-    Example:
-        ```python
-        # After user creation or deletion
-        await invalidate_users_list_cache()
-        ```
-
-    Note:
-        Cache failures are logged but don't raise exceptions.
-    """
-    if not _cache_initialized():
-        return
-    try:
-        await FastAPICache.clear(namespace=CacheNamespaces.USERS_LIST)
-        category_logger.info("Cleared users list cache", LogCategory.CACHE)
-    except (RedisError, OSError, RuntimeError) as e:
-        category_logger.error(
-            f"Failed to invalidate users list cache: {e}",
-            LogCategory.CACHE,
-        )
-
 
 async def invalidate_api_keys_cache(user_id: int) -> None:
     """Invalidate cached API keys list for a specific user.
@@ -153,10 +127,7 @@ async def invalidate_user_related_caches(user_id: int) -> None:
     """
     if not _cache_initialized():
         return
-    await asyncio.gather(
-        invalidate_user_cache(user_id),
-        invalidate_users_list_cache(),
-    )
+    await invalidate_user_cache(user_id)
 
 
 async def invalidate_namespace(namespace: str) -> None:

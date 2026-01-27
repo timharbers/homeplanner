@@ -610,52 +610,6 @@ paths:
         "401":
           description: Unauthorized
 
-  /rooms/{room_id}/tasks/count:
-    get:
-      operationId: getRoomTaskCount
-      summary: Get room task count
-      description: Fetch number of tasks assigned to a room.
-      tags:
-        - Tasks
-      parameters:
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Task count
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  count:
-                    type: integer
-        "401":
-          description: Unauthorized
-
-  /users:
-    get:
-      operationId: getHouseholdUsers
-      summary: Get household users
-      description: Fetch list of users in the household for assignment and filtering.
-      tags:
-        - Users
-      responses:
-        "200":
-          description: List of household users
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UserSummary"
-        "401":
-          description: Unauthorized
-
   /users/me:
     get:
       operationId: getCurrentUser
@@ -714,7 +668,93 @@ paths:
                 items:
                   $ref: "#/components/schemas/Floor"
         "401":
+          description: Unauthorized        
+    post:
+      operationId: createFloor
+      summary: Create floor
+      description: Create a new floor within the household.
+      tags:
+        - Floors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFloorRequest"
+      responses:
+        "201":
+          description: Floor created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Floor"
+        "400":
+          description: Invalid request data
+        "401":
           description: Unauthorized
+        "403":
+          description: Only household owner or admins can create floors
+    delete:
+      operationId: deleteFloor
+      summary: Delete floor
+      description: Delete a floor. Rooms on this floor must be moved or deleted first.
+      tags:
+        - Floors
+      parameters:
+        - name: floor_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Floor deleted successfully
+        "401":
+          description: Unauthorized
+        "403":
+          description: Only household owner or admins can delete floors
+        "404":
+          description: Floor not found
+        "409":
+          description: Floor still contains rooms
+
+  /floors/{floor_id}:
+    put:
+      operationId: updateFloor
+      summary: Update floor
+      description: Update floor details such as its name or order.
+      tags:
+        - Floors
+      parameters:
+        - name: floor_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFloorRequest"
+      responses:
+        "200":
+          description: Floor updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Floor"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized
+        "403":
+          description: Only household owner or admins can update floors
+        "404":
+          description: Floor not found
+         
 
 
   /invitations:
@@ -964,6 +1004,9 @@ components:
     RoomStats:
       type: object
       properties:
+        taskCount:
+          type: integer
+          example: 12
         totalTasks:
           type: integer
         completed:
@@ -973,6 +1016,7 @@ components:
         blocked:
           type: integer
       required:
+        - taskCount
         - totalTasks
         - completed
         - inProgress
@@ -1150,19 +1194,6 @@ components:
         total:
           type: integer
 
-    UserSummary:
-      type: object
-      description: Lightweight user representation for dropdowns.
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-      required:
-        - id
-        - name
-
     UserProfile:
       type: object
       properties:
@@ -1253,3 +1284,31 @@ components:
       required:
         - id
         - name
+    CreateFloorRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: "First Floor"
+        order:
+          type: integer
+          minimum: 0
+          description: Display order of the floor within the household
+          example: 0
+      required:
+        - name
+
+    UpdateFloorRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: "Upstairs"
+        order:
+          type: integer
+          minimum: 0
+          description: Display order of the floor within the household
+          example: 1
+
