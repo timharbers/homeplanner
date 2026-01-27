@@ -13,7 +13,10 @@ from app.database.db import get_database
 from app.managers.security import get_current_user
 from app.models.household import Household, HouseholdRole, household_members
 from app.models.user import User
-from app.schemas.request.household import UpdateHouseholdRequest
+from app.schemas.request.household import (
+    CreateHouseholdRequest,
+    UpdateHouseholdRequest,
+)
 from app.schemas.response.household import (
     HouseholdMemberResponse,
     HouseholdResponse,
@@ -89,6 +92,50 @@ async def get_household(
 ) -> HouseholdResponse:
     """Get household information for the current user."""
     household = await _get_household_for_user(db, user.id)
+    members = await _get_members(db, household.id)
+    return _household_response(household, members)
+
+
+@router.post(
+    "",
+    dependencies=[Depends(get_current_user)],
+    response_model=HouseholdResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create household",
+    description=(
+        "Create a new household. The authenticated user becomes the owner."
+    ),
+)
+async def create_household(
+    request: CreateHouseholdRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_database)],
+) -> HouseholdResponse:
+    """Create a household for the current user."""
+    existing = await db.execute(
+        select(household_members.c.household_id).where(
+            household_members.c.user_id == user.id
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already part of a household",
+        )
+
+    household = Household(name=request.name, owner_id=user.id)
+    db.add(household)
+    await db.flush()
+
+    await db.execute(
+        household_members.insert().values(
+            household_id=household.id,
+            user_id=user.id,
+            role=HouseholdRole.owner,
+        )
+    )
+    await db.flush()
+
     members = await _get_members(db, household.id)
     return _household_response(household, members)
 

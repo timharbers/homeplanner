@@ -9,7 +9,7 @@ servers:
 security:
   - BearerAuth: []
 paths:
-  /api/household:
+  /household:
     get:
       operationId: getHousehold
       summary: Get household information
@@ -25,6 +25,29 @@ paths:
                 $ref: "#/components/schemas/Household"
         "401":
           description: Unauthorized
+    post:
+      operationId: createHousehold
+      summary: Create household
+      description: Create a new household. The authenticated user becomes the owner.
+      tags:
+        - Household
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHouseholdRequest"
+      responses:
+        "201":
+          description: Household created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "400":
+          description: User is already part of a household
+        "401":
+          description: Unauthorized         
     put:
       operationId: updateHousehold
       summary: Update household
@@ -61,7 +84,7 @@ paths:
           description: Unauthorized
         "403":
           description: Forbidden – user is not the household owner
-  /api/household/leave:
+  /household/leave:
     post:
       operationId: leaveHousehold
       summary: Leave household
@@ -75,7 +98,7 @@ paths:
           description: Owner cannot leave the household
         "401":
           description: Unauthorized
-  /api/household/users/{user_id}:
+  /household/users/{user_id}:
     delete:
       operationId: removeHouseholdMember
       summary: Remove household member
@@ -100,7 +123,7 @@ paths:
           description: Forbidden – insufficient permissions
         "404":
           description: User not found in household
-  /api/rooms:
+  /rooms:
     get:
       operationId: getRooms
       summary: Get household rooms
@@ -141,7 +164,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/rooms/{room_id}:
+  /rooms/{room_id}:
     get:
       operationId: getSingleRoom
       summary: Get single room details
@@ -223,7 +246,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/rooms/{room_id}/stats:
+  /rooms/{room_id}/stats:
     get:
       operationId: getRoomStatistics
       summary: Get room statistics
@@ -250,7 +273,7 @@ paths:
           description: Unauthorized
 
          
-  /api/tasks:
+  /tasks:
     get:
       operationId: getAllTasks
       summary: Get all tasks
@@ -344,7 +367,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/{task_id}:
+  /tasks/{task_id}:
     get:
       operationId: getTask
       summary: Get single task details
@@ -422,7 +445,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/{task_id}/available-dependencies:
+  /tasks/{task_id}/available-dependencies:
     get:
       operationId: getAvailableTaskDependencies
       summary: Get available tasks for dependencies
@@ -448,7 +471,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/{task_id}/dependencies:
+  /tasks/{task_id}/dependencies:
     post:
       operationId: addTaskDependency
       summary: Add task dependency
@@ -476,7 +499,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/{task_id}/dependencies/{depends_on_task_id}:
+  /tasks/{task_id}/dependencies/{depends_on_task_id}:
     delete:
       operationId: deleteTaskDependency
       summary: Remove task dependency
@@ -501,7 +524,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/{task_id}/dependency-graph:
+  /tasks/{task_id}/dependency-graph:
     get:
       operationId: getTaskDependencyGraph
       summary: Get task dependency graph
@@ -525,7 +548,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/{task_id}/status:
+  /tasks/{task_id}/status:
     patch:
       operationId: updateTaskStatus
       summary: Quick update task status
@@ -551,7 +574,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/stats:
+  /tasks/stats:
     get:
       operationId: getDashboardStatistics
       summary: Get dashboard statistics
@@ -568,7 +591,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/tasks/suggestions:
+  /tasks/suggestions:
     get:
       operationId: getTaskSuggestions
       summary: Get smart task suggestions
@@ -587,7 +610,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/rooms/{room_id}/tasks/count:
+  /rooms/{room_id}/tasks/count:
     get:
       operationId: getRoomTaskCount
       summary: Get room task count
@@ -614,7 +637,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/users:
+  /users:
     get:
       operationId: getHouseholdUsers
       summary: Get household users
@@ -633,7 +656,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/users/me:
+  /users/me:
     get:
       operationId: getCurrentUser
       summary: Get current user profile
@@ -674,7 +697,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/floors:
+  /floors:
     get:
       operationId: getFloors
       summary: Get floors
@@ -694,7 +717,7 @@ paths:
           description: Unauthorized
 
 
-  /api/invitations:
+  /invitations:
     get:
       operationId: getInvitations
       summary: Get pending invitations
@@ -739,7 +762,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/invitations/{invitation_id}:
+  /invitations/{invitation_id}:
     delete:
       operationId: cancelInvitation
       summary: Cancel invitation
@@ -763,7 +786,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/invitations/{invitation_id}/accept:
+  /invitations/{invitation_id}/accept:
     post:
       operationId: acceptInvitation
       summary: Accept invitation to join household
@@ -791,7 +814,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /api/invitations/{invitation_id}/decline:
+  /invitations/{invitation_id}/decline:
     post:
       operationId: declineInvitation
       summary: Decline invitation to join household
@@ -865,7 +888,16 @@ components:
       required:
         - userId
         - role
-        - joinedAt
+        - joinedAt      
+    CreateHouseholdRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: "The Smith Family"
+      required:
+        - name     
     UpdateHouseholdRequest:
       type: object
       properties:
