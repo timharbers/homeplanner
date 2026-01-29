@@ -221,7 +221,7 @@ MAIL_FROM_NAME="FastAPI Template"
 
 ## Configure Admin Pages (Optional)
 
-The API includes an optional admin panel for managing users and API keys through
+The API includes an optional admin panel for managing users through
 a web interface. It's disabled by default and must be explicitly enabled.
 
 !!! info "Admin Panel Access"
@@ -615,7 +615,6 @@ LOG_CATEGORIES=ALL
 | EMAIL     | Email sending operations          | Production (if using email) |
 | ERRORS    | Error conditions and exceptions   | Production (always)         |
 | ADMIN     | Admin panel operations            | Production (audit)          |
-| API_KEYS  | API key operations                | Production (security)       |
 | CACHE     | Cache operations, hits, misses    | Performance tuning          |
 
 **Configuration examples:**

@@ -27,9 +27,6 @@ class User(Base):
     verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
-    api_keys = relationship(
-        "ApiKey", back_populates="user", cascade="all, delete"
-    )
     households = relationship(
         "Household",
         secondary="household_members",

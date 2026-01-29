@@ -85,14 +85,6 @@ Total authentication failures.
 - Type: Counter
 - Use for: Detecting brute force attacks, token abuse patterns
 
-**`{api_title}_api_key_validations_total`**
-Total API key validation attempts.
-
-- Labels:
-  - `status`: `valid`, `invalid_format`, `not_found`, `inactive`, `user_banned`, `user_unverified`
-- Type: Counter
-- Use for: Monitoring API key adoption, detecting misconfiguration
-
 **`{api_title}_login_attempts_total`**
 Total login attempts.
 

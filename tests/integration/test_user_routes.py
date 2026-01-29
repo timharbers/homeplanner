@@ -69,7 +69,7 @@ class TestUserRoutes:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.json() == {
-            "detail": "Not authenticated. Use either JWT token or API key."
+            "detail": "Not authenticated. Use a JWT token."
         }
 
     # ------------------------------------------------------------------------ #

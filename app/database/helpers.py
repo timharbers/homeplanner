@@ -2,14 +2,11 @@
 
 from collections.abc import Sequence
 from typing import Any
-from uuid import UUID
-
 from passlib.context import CryptContext
-from sqlalchemy import insert, select, text, update
+from sqlalchemy import insert, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.api_key import ApiKey
 from app.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -107,57 +104,3 @@ async def add_new_user_(
     )
     return result.scalar_one()
 
-
-async def add_new_api_key_(
-    api_key_data: dict[str, Any], session: AsyncSession
-) -> ApiKey | None:
-    """Add a new API key to the database."""
-    result = await session.execute(
-        insert(ApiKey).values(api_key_data).returning(ApiKey)
-    )
-    api_key = result.scalar_one()
-    await session.flush()
-    return api_key
-
-
-async def update_api_key_(
-    key_id: UUID,
-    update_data: dict[str, Any],
-    session: AsyncSession,
-) -> ApiKey | None:
-    """Update an API key in the database."""
-    result = await session.execute(
-        update(ApiKey)
-        .where(ApiKey.id == key_id)
-        .values(update_data)
-        .returning(ApiKey)
-    )
-    api_key = result.scalar_one_or_none()
-    if api_key:
-        await session.flush()
-    return api_key
-
-
-async def get_api_key_by_id_(
-    key_id: UUID, session: AsyncSession
-) -> ApiKey | None:
-    """Return an API key by ID."""
-    return await session.get(ApiKey, key_id)
-
-
-async def get_api_key_by_hash_(
-    key_hash: str, session: AsyncSession
-) -> ApiKey | None:
-    """Return an API key by its hash."""
-    result = await session.execute(select(ApiKey).where(ApiKey.key == key_hash))
-    return result.scalar_one_or_none()
-
-
-async def get_user_api_keys_(
-    user_id: int, session: AsyncSession
-) -> Sequence[ApiKey]:
-    """Return all API keys for a user."""
-    result = await session.execute(
-        select(ApiKey).where(ApiKey.user_id == user_id)
-    )
-    return result.scalars().all()

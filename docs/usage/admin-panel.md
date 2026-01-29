@@ -5,7 +5,7 @@
 There is an (optional) administration site included in this template. This is
 built using the
 [sqladmin](https://aminalaee.github.io/sqladmin/){:target="_blank"} package and
-gives you an easy way to manage your users and API keys.
+gives you an easy way to manage your users.
 
 !!! warning
     Only **existing admin users** can access the site, so they need to already
@@ -30,13 +30,12 @@ then log in using the username and password of an admin user:
 
 ![Admin Site Login](./images/login_image.png)
 
-You can view/edit the users and API keys in the database, choose from the
+You can view/edit the users in the database, choose from the
 sidebar:
 
 ![Admin Site Sidebar](./images/admin_sidebar.png)
 
-This will then list the table and allow you to view, edit or delete the users or
-api keys.
+This will then list the table and allow you to view, edit or delete the users.
 
 ![Admin Site Example](./images/admin_example.png)
 

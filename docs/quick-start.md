@@ -184,8 +184,6 @@ token will be automatically included in all requests.
     you're authenticated. You can now test protected endpoints like:
 
     - `GET /users/me` - Get your user profile
-    - `GET /users/` - List all users (admin only)
-    - `POST /api-keys/` - Create API keys
     - And more!
 
 ## 7. Test It (30 seconds)
@@ -197,10 +195,6 @@ Now that you're authenticated, you can test the protected endpoints:
 ```bash
 # Get the root endpoint (returns welcome message - no auth required)
 curl http://localhost:8000/
-
-# Get all users (requires authentication)
-curl http://localhost:8000/users/ \
-  -H "Authorization: Bearer $TOKEN"
 
 # Get your own profile (requires authentication)
 curl http://localhost:8000/users/me \
@@ -243,7 +237,6 @@ This is useful for:
 
 - **[Configuration Guide](usage/configuration/environment.md)** - Understand all environment variables
 - **[User Management](usage/user-management.md)** - Manage users via CLI and API
-- **[API Keys](usage/api-keys.md)** - Create and use API keys for authentication
 - **[Admin Panel](usage/admin-panel.md)** - Access the web-based admin interface
 
 ### Customize Your API

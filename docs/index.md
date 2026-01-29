@@ -53,16 +53,13 @@ following advantages to starting your own from scratch :
   custom frontends. Supports both JSON API and form-based submissions. The
   system protects against email enumeration attacks and includes URL encoding
   and token validation for security.
-- **API Keys** are fully implemented and can be used by registered users instead
-  of the JWT. These will **not expire** at present though adding expiry is a
-  future plan. API keys are passed using the `X-API-Key` header.
 - A `Refresh Token` with 30 day expiry is sent at time of register or login
   (never again). This will enable easy re-authentication when the JWT expires
   without needing to send username or password again, and should be done
   automatically by the Front-End.
 - Full test coverage using `Pytest`.
 - A clean layout to help structure your project.
-- An optional **Admin site** to manage users and API keys. This uses the
+- An optional **Admin site** to manage users. This uses the
   `sqladmin` package to give you an easy way to manage your database.
 - **Category-based logging** using [loguru](https://github.com/Delgan/loguru)
   with configurable log levels, rotation, retention, and compression. Control
@@ -75,7 +72,7 @@ following advantages to starting your own from scratch :
   complexity). Tests run with in-memory caching enabled.
 - **Prometheus metrics** for production observability. Optional metrics
   collection tracks HTTP performance (requests, latency, in-flight), business
-  metrics (auth failures, API key usage, login attempts), and custom
+  metrics (auth failures, login attempts), and custom
   application metrics. Exposed via `/metrics` endpoint when enabled.
 - **Rate limiting** for authentication endpoints to protect against brute force
   attacks, spam, and abuse. Disabled by default, supports both in-memory (for

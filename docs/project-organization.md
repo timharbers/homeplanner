@@ -64,7 +64,7 @@ observability. This module provides opt-in metrics collection via the
 
 - `instrumentator.py` - Configures HTTP performance metrics (requests, latency,
   size)
-- `custom.py` - Business metrics for auth failures, API keys, and login attempts
+- `custom.py` - Business metrics for auth failures and login attempts
 - `namespace.py` - Centralized metric namespace computation from `api_title`
   setting
 

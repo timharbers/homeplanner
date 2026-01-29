@@ -9,14 +9,8 @@ from pytest_mock import MockerFixture
 from redis.exceptions import RedisError
 
 from app.cache.decorators import cached
-from app.cache.invalidation import (
-    invalidate_api_keys_cache,
-    invalidate_namespace,
-    invalidate_user_cache,
-)
+from app.cache.invalidation import invalidate_namespace, invalidate_user_cache
 from app.cache.key_builders import (
-    api_key_single_key_builder,
-    api_keys_list_key_builder,
     paginated_key_builder,
     user_paginated_key_builder,
     user_scoped_key_builder,
@@ -148,64 +142,6 @@ class TestKeyBuilders:
 
         assert key == "items:list_items:page:1:size:50"
 
-    def test_api_keys_list_key_builder_regular_user(self) -> None:
-        """Test API keys list builder for regular user endpoint."""
-        mock_request = MagicMock(spec=Request)
-        mock_user = MagicMock()
-        mock_user.id = 789
-        mock_request.state.user = mock_user
-
-        mock_func = MagicMock(__name__="list_api_keys")
-
-        key = api_keys_list_key_builder(
-            func=mock_func,
-            namespace="apikeys",
-            request=mock_request,
-            response=MagicMock(spec=Response),
-            args=(),
-            kwargs={},
-        )
-
-        assert key == "apikeys:789:list_api_keys"
-
-    def test_api_keys_list_key_builder_admin_endpoint(self) -> None:
-        """Test API keys list builder for admin endpoint with user_id."""
-        mock_request = MagicMock(spec=Request)
-
-        mock_func = MagicMock(__name__="list_user_api_keys")
-
-        key = api_keys_list_key_builder(
-            func=mock_func,
-            namespace="apikeys",
-            request=mock_request,
-            response=MagicMock(spec=Response),
-            args=(),
-            kwargs={"user_id": 999},
-        )
-
-        assert key == "apikeys:999:list_user_api_keys"
-
-    def test_api_key_single_key_builder(self) -> None:
-        """Test single API key builder."""
-        mock_request = MagicMock(spec=Request)
-        mock_user = MagicMock()
-        mock_user.id = 555
-        mock_request.state.user = mock_user
-
-        mock_func = MagicMock(__name__="get_api_key")
-        key_id = "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"
-
-        key = api_key_single_key_builder(
-            func=mock_func,
-            namespace="apikey",
-            request=mock_request,
-            response=MagicMock(spec=Response),
-            args=(),
-            kwargs={"key_id": key_id},
-        )
-
-        assert key == f"apikey:555:{key_id}"
-
     def test_user_paginated_key_builder(self) -> None:
         """Test user_paginated_key_builder (currently unused)."""
         # This function exists but isn't used yet
@@ -269,35 +205,6 @@ class TestInvalidationFunctions:
 
     @pytest.mark.asyncio
     @pytest.mark.asyncio
-    async def test_invalidate_api_keys_cache_success(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test successful API keys cache invalidation."""
-        mock_clear = mocker.patch.object(
-            FastAPICache, "clear", new_callable=AsyncMock
-        )
-
-        await invalidate_api_keys_cache(456)
-
-        mock_clear.assert_called_once_with(namespace="apikeys:456")
-
-    @pytest.mark.asyncio
-    async def test_invalidate_api_keys_cache_runtime_error(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test API keys cache invalidation handles runtime errors."""
-        mock_clear = mocker.patch.object(
-            FastAPICache,
-            "clear",
-            new_callable=AsyncMock,
-            side_effect=RuntimeError("Backend not initialized"),
-        )
-
-        # Should not raise exception
-        await invalidate_api_keys_cache(456)
-
-        assert mock_clear.call_count == 1
-
     @pytest.mark.asyncio
     async def test_invalidate_namespace_success(
         self, mocker: MockerFixture

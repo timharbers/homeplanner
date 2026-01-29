@@ -31,7 +31,6 @@
   have complexity warnings (C901, PLR0911, PLR0912) suppressed to enable
   granular business metrics tracking. Consider refactoring to reduce complexity
   while maintaining metric granularity:
-  - `app/managers/api_key.py` - `ApiKeyAuth.__call__()` method (line 155)
 
 ## Bugs/Annoyances
 
@@ -48,7 +47,6 @@
 - Implement user groups and permissions, make it configurable.
 - Allow social login (eg Google, Facebook, Twitter, etc), check out
   [fastsapi-sso](https://github.com/tomasvotava/fastapi-sso) for this.
-- Add API key management to the CLI too, working on both user and global scope.
 - Implement password complexity checks (length, character mix, zxcvbn strength).
   Store password history in a dedicated table (user_password_history) with
   user_id, password_hash, and created_at fields (hash format identical to the

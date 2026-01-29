@@ -25,37 +25,7 @@ example now only supports 3.10+. I decided for easier maintenance to drop 3.9.#
 This is now officially supported, with a good few changes made to dependencies
 and tests to make it work.
 
-### Modified the API Key Hashing method
-
-The API key is **NEVER** stored in the database, however a **hashed** version of
-this is so that we can authenticate. Previously it used a plain SHA256
-algorythm, and has now been switched to using `HMAC` in conjunction with SHA256
-instead. This allows using the `SECRET_KEY` already set to make the API keys
-more secure. As a result, **any existing API Keys are now invalid and will need
-to be deleted and regenerated**.
-
 ## Breaking Changes in 0.7.0
-
-### Modified the Authentication backend
-
-This version introduces **API Keys** that can be created and used by a
-registered user to avoid having to keep refreshing the JWT. They are sent using
-the `X-API-Key` header.
-
-As a result of this, the authentication backend needed to be refactored quite a
-bit. Specifically, the `CustomHTTPBearer` was renamed to simply `HTTPBearer` and
-the usage changes slightly, though you should have been using the
-`oauth2_schema` helper instead of this class directly anyway.
-
-1. If you do NOT want to use the API key functionality, keep using the
-   `Depends(oauth2_schema)` in your route dependencies as before. These routes
-   will not be able to be accessed by an API Key.
-2. To migrate to use **BOTH** JWT and/or API Keys, change this to
-   `Depends(get_current_user)`.
-
-This change simplifies testing and allowed to test the Admin pages easier.
-Otherwise, it should be transparent unless you were accessing the `DATABASE_URL`
-directly.
 
 ### Refactor `set_ban_status()` signature in `UserManager`
 

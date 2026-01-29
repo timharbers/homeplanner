@@ -694,31 +694,6 @@ paths:
           description: Unauthorized
         "403":
           description: Only household owner or admins can create floors
-    delete:
-      operationId: deleteFloor
-      summary: Delete floor
-      description: Delete a floor. Rooms on this floor must be moved or deleted first.
-      tags:
-        - Floors
-      parameters:
-        - name: floor_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "204":
-          description: Floor deleted successfully
-        "401":
-          description: Unauthorized
-        "403":
-          description: Only household owner or admins can delete floors
-        "404":
-          description: Floor not found
-        "409":
-          description: Floor still contains rooms
-
   /floors/{floor_id}:
     put:
       operationId: updateFloor
@@ -754,9 +729,30 @@ paths:
           description: Only household owner or admins can update floors
         "404":
           description: Floor not found
-         
-
-
+    delete:
+      operationId: deleteFloor
+      summary: Delete floor
+      description: Delete a floor. Rooms on this floor must be moved or deleted first.
+      tags:
+        - Floors
+      parameters:
+        - name: floor_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Floor deleted successfully
+        "401":
+          description: Unauthorized
+        "403":
+          description: Only household owner or admins can delete floors
+        "404":
+          description: Floor not found
+        "409":
+          description: Floor still contains rooms        
   /invitations:
     get:
       operationId: getInvitations
@@ -1004,9 +1000,6 @@ components:
     RoomStats:
       type: object
       properties:
-        taskCount:
-          type: integer
-          example: 12
         totalTasks:
           type: integer
         completed:

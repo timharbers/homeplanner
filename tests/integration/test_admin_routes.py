@@ -44,7 +44,7 @@ class TestAdminAuth:
         self, client: AsyncClient
     ) -> None:
         """Test that the admin routes redirect to the login if no auth."""
-        routes = ["/admin/user/list", "/admin/api-key/list", "/admin/logout"]
+        routes = ["/admin/user/list", "/admin/logout"]
 
         for route in routes:
             response = await client.get(route, follow_redirects=True)
@@ -96,7 +96,6 @@ class TestAdminAuth:
         "route",
         [
             "/admin/user/list",
-            "/admin/api-key/list",
         ],
     )
     async def test_authenticated_user_access_admin_routes(
@@ -125,8 +124,17 @@ class TestAdminAuth:
         # session is closed and obviously rolled back after the first request.
         # This is annoying and need to find a better way to handle this.
         async with async_test_session() as new_session:
-            new_session.begin()
-            new_session.add(admin_user)
+            admin_data = {
+                "id": admin_user.id,
+                "email": admin_user.email,
+                "password": admin_user.password,
+                "first_name": admin_user.first_name,
+                "last_name": admin_user.last_name,
+                "verified": admin_user.verified,
+                "role": admin_user.role,
+                "banned": admin_user.banned,
+            }
+            new_session.add(User(**admin_data))
             await new_session.flush()
 
             mocker.patch(

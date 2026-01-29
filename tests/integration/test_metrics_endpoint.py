@@ -235,16 +235,11 @@ class TestMetricsEndpoint:
             f"# TYPE {METRIC_NAMESPACE}_auth_failures_total counter" in content
         )
         assert (
-            f"# TYPE {METRIC_NAMESPACE}_api_key_validations_total counter"
-            in content
-        )
-        assert (
             f"# TYPE {METRIC_NAMESPACE}_login_attempts_total counter" in content
         )
 
         # Check for HELP text
         assert f"# HELP {METRIC_NAMESPACE}_auth_failures_total" in content
-        assert f"# HELP {METRIC_NAMESPACE}_api_key_validations_total" in content
         assert f"# HELP {METRIC_NAMESPACE}_login_attempts_total" in content
 
     @pytest.mark.asyncio
@@ -321,34 +316,6 @@ class TestMetricsEndpoint:
             f'{METRIC_NAMESPACE}_login_attempts_total{{status="invalid_password"}}',
         )
         assert new_invalid == initial_invalid + 1
-
-    @pytest.mark.asyncio
-    async def test_api_key_validation_metrics(self, client) -> None:
-        """Test that API key validations are tracked correctly."""
-        # Get initial metric value
-        response = await client.get("/metrics")
-        initial_content = response.text
-
-        initial_invalid_format = self._extract_metric_value(
-            initial_content,
-            f'{METRIC_NAMESPACE}_api_key_validations_total{{status="invalid_format"}}',
-        )
-
-        # Try request with invalid API key format (no prefix)
-        await client.get(
-            "/users/me", headers={"X-API-Key": "invalid_key_no_prefix"}
-        )
-
-        # Check metrics updated
-        response = await client.get("/metrics")
-        content = response.text
-
-        # Should have incremented by 1
-        new_invalid_format = self._extract_metric_value(
-            content,
-            f'{METRIC_NAMESPACE}_api_key_validations_total{{status="invalid_format"}}',
-        )
-        assert new_invalid_format == initial_invalid_format + 1
 
     @pytest.mark.asyncio
     async def test_auth_failure_metrics(self, client) -> None:

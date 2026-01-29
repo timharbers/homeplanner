@@ -9,8 +9,6 @@ the app continues functioning (with stale cache) if the cache backend
 fails.
 """
 
-import asyncio
-
 from fastapi_cache import FastAPICache
 from redis.exceptions import RedisError
 
@@ -28,8 +26,8 @@ def _cache_initialized() -> bool:
 async def invalidate_user_cache(user_id: int) -> None:
     """Invalidate all cached data for a specific user.
 
-    Clears user-scoped cache entries (e.g., /users/me, /users/keys).
-    Also clears the single-user lookup in /users/ endpoint.
+    Clears user-scoped cache entries (e.g., /users/me).
+    Also clears the single-user cache namespace.
 
     Args:
         user_id: The ID of the user whose cache should be cleared.
@@ -51,8 +49,7 @@ async def invalidate_user_cache(user_id: int) -> None:
         namespace = CacheNamespaces.USER_ME_FORMAT.format(user_id=user_id)
         await FastAPICache.clear(namespace=namespace)
 
-        # Clear single user lookup from /users/?user_id=X
-        # (namespace: "users:{user_id}")
+        # Clear single user lookup cache (namespace: "users:{user_id}")
         users_namespace = CacheNamespaces.USERS_SINGLE_FORMAT.format(
             user_id=user_id
         )
@@ -69,47 +66,12 @@ async def invalidate_user_cache(user_id: int) -> None:
 
 
 
-async def invalidate_api_keys_cache(user_id: int) -> None:
-    """Invalidate cached API keys list for a specific user.
-
-    Clears API key list cache for the given user.
-    Call this when API keys are created, updated, or deleted.
-
-    Args:
-        user_id: The ID of the user whose API keys cache should be
-            cleared.
-
-    Example:
-        ```python
-        # After API key creation/deletion
-        await invalidate_api_keys_cache(user.id)
-        ```
-
-    Note:
-        Cache failures are logged but don't raise exceptions.
-    """
-    if not _cache_initialized():
-        return
-    try:
-        namespace = CacheNamespaces.API_KEYS_LIST_FORMAT.format(user_id=user_id)
-        await FastAPICache.clear(namespace=namespace)
-        category_logger.info(
-            f"Cleared API keys cache for user {user_id}",
-            LogCategory.CACHE,
-        )
-    except (RedisError, OSError, RuntimeError) as e:
-        category_logger.error(
-            f"Failed to invalidate API keys cache for user {user_id}: {e}",
-            LogCategory.CACHE,
-        )
-
 
 async def invalidate_user_related_caches(user_id: int) -> None:
     """Invalidate all user-related caches in parallel for better performance.
 
-    Clears both user-specific cache entries and the users list cache
-    concurrently using `asyncio.gather()`. This is more efficient than
-    calling the invalidation functions sequentially.
+    Clears user-specific cache entries. This is more efficient than
+    calling invalidation functions sequentially.
 
     Args:
         user_id: The ID of the user whose caches should be cleared.

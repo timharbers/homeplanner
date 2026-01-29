@@ -149,29 +149,6 @@ def _validate_user_status(user_data: User) -> None
 
 ---
 
-### 5. `app/managers/api_key.py:155-248` - Complex Method
-
-> [!NOTE]
-> **Related to SECURITY-REVIEW.md:**
->
-> - "Existing TODOs Worth Prioritizing" - Explicitly mentions: "Refactor
->   `ApiKeyAuth.__call__()` complexity"
-
-**Issue:** `ApiKeyAuth.__call__` (~93 lines) has multiple `noqa` comments
-(C901, PLR0911, PLR0912) indicating high complexity.
-
-**Recommendation:** Extract validation steps into separate methods:
-
-```python
-def _validate_api_key_format(raw_key: str) -> str
-def _validate_api_key_active(key: ApiKey) -> None
-def _validate_user_status_for_api_key(user: User) -> None
-```
-
-This would improve testability and readability.
-
----
-
 ### 6. `app/resources/auth.py:280-305` - Duplicated Context Building
 
 **Issue:** The `reset_password` function builds similar error context
@@ -197,21 +174,6 @@ def _build_reset_password_context(
         "error": error,
     }
 ```
-
----
-
-### 7. `app/resources/api_key.py` - Fragile Response Pattern
-
-**Issue:** Multiple locations (lines 46-54, 67, 84, 106) use `key.__dict__` for
-Pydantic model validation:
-
-```python
-return ApiKeyResponse.model_validate(key.__dict__)
-```
-
-**Recommendation:** The `__dict__` pattern is fragile. Consider adding a
-`model_dump()` method or using Pydantic's `from_orm` equivalent if available
-in the version being used.
 
 ---
 

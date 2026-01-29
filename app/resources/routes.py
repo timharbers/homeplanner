@@ -4,7 +4,6 @@ from fastapi import APIRouter
 
 from app.config.settings import get_settings
 from app.resources import (
-    api_key,
     auth,
     floor,
     heartbeat,
@@ -20,7 +19,6 @@ api_router = APIRouter(prefix=get_settings().api_root)
 
 api_router.include_router(user.router)
 api_router.include_router(auth.router)
-api_router.include_router(api_key.router)
 api_router.include_router(floor.router)
 api_router.include_router(household.router)
 api_router.include_router(invitation.router)

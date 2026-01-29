@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from sqladmin import Admin
 
 from app.admin.auth import AdminAuth
-from app.admin.models import KeysAdmin, UserAdmin
+from app.admin.models import UserAdmin
 from app.config.settings import get_settings
 from app.database.db import async_session
 
@@ -30,7 +30,7 @@ def register_admin(app: FastAPI) -> None:
         title=get_settings().admin_pages_title,
     )
 
-    views = (UserAdmin, KeysAdmin)
+    views = (UserAdmin,)
 
     for view in views:
         admin.add_view(view)

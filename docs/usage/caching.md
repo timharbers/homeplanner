@@ -127,17 +127,12 @@ from app.cache.constants import CacheNamespaces
 
 # Available namespaces
 CacheNamespaces.USER_ME  # "user" - User-scoped endpoints
-CacheNamespaces.USERS_SINGLE  # "users" - Base namespace for /users/ endpoint
-CacheNamespaces.USERS_LIST  # "users:list" - Paginated user lists
-CacheNamespaces.API_KEYS_LIST  # "apikeys" - User's API keys list
-CacheNamespaces.API_KEY_SINGLE  # "apikey" - Single API key lookup
+CacheNamespaces.USERS_SINGLE  # "users" - Base namespace for user lookups
 ```
 
 Key format patterns:
-- `user:{user_id}` - User-scoped endpoints (/users/me, /users/keys)
-- `users:list` - Paginated user lists
+- `user:{user_id}` - User-scoped endpoints (/users/me)
 - `users:{user_id}` - Single user lookups
-- `apikeys:{user_id}` - User's API keys list
 
 ## Configuration
 
@@ -303,12 +298,10 @@ await db.commit()
 await invalidate_user_related_caches(user.id)
 ```
 
-This clears both user-specific and list caches concurrently using
-`asyncio.gather()` for better performance:
+This clears user-specific caches:
 
 - User-scoped cache (`user:{user_id}`)
 - Single user lookup (`users:{user_id}`)
-- Users list cache (`users:list`)
 
 ### Individual Cache Invalidation
 
@@ -316,26 +309,11 @@ For fine-grained control, you can invalidate specific cache namespaces
 individually:
 
 ```python
-from app.cache import (
-    invalidate_user_cache,
-    invalidate_users_list_cache,
-)
+from app.cache import invalidate_user_cache
 
 # Clear user-specific caches only
 await invalidate_user_cache(user.id)
 
-# Clear users list only (after role changes, etc.)
-await invalidate_users_list_cache()
-```
-
-### API Keys Cache Invalidation
-
-```python
-from app.cache import invalidate_api_keys_cache
-
-# After creating/deleting API keys
-await db.commit()
-await invalidate_api_keys_cache(user.id)
 ```
 
 ### Custom Namespace Invalidation
@@ -375,16 +353,9 @@ async def get_dashboard(user: User = Depends(AuthManager())):
 Generates keys with page/size parameters:
 `{namespace}:{func_name}:page:{page}:size:{size}`
 
-**`users_list_key_builder`**
-Specialized builder for user list endpoints. Handles both single-user
-lookups and paginated lists.
 
-**`api_keys_list_key_builder`**
-Generates keys for API key list endpoints, supports both user and
-admin contexts.
-
-**`api_key_single_key_builder`**
-Generates keys for single API key lookups.
+**`user_paginated_key_builder`**
+Generates keys that include user ID and pagination parameters.
 
 ### Custom Key Builders
 
@@ -479,7 +450,7 @@ This forces a fresh response while still updating the cache.
 
 ### Typical Performance
 
-*Approximate benchmarks with moderate dataset (50 users, 10 API keys):*
+*Approximate benchmarks with moderate dataset (50 users):*
 
 | Operation          | Without Cache | With Cache (Hit) | Improvement |
 | ------------------ | ------------- | ---------------- | ----------- |

@@ -13,14 +13,6 @@ auth_failures_total = Counter(
     namespace=METRIC_NAMESPACE,
 )
 
-# API key validation tracking
-api_key_validations_total = Counter(
-    "api_key_validations_total",
-    "Total API key validation attempts by status",
-    ["status"],
-    namespace=METRIC_NAMESPACE,
-)
-
 # Login attempt tracking
 login_attempts_total = Counter(
     "login_attempts_total",
@@ -44,11 +36,6 @@ def increment_auth_failure(reason: str, method: str) -> None:
     if get_settings().metrics_enabled:
         auth_failures_total.labels(reason=reason, method=method).inc()
 
-
-def increment_api_key_validation(status: str) -> None:
-    """Increment API key validation counter."""
-    if get_settings().metrics_enabled:
-        api_key_validations_total.labels(status=status).inc()
 
 
 def increment_login_attempt(status: str) -> None:

@@ -14,6 +14,7 @@ import pytest_asyncio
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -71,6 +72,7 @@ async def async_engine():
     )
     # Create all tables
     async with engine.begin() as conn:
+        await conn.execute(text("DROP TABLE IF EXISTS api_keys CASCADE"))
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield engine

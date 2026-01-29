@@ -75,27 +75,6 @@
   - Reset password GET: 10 per minute per IP ✅
   - Reset password POST: 5 per hour per IP ✅
 
-### 4. API Key Scopes Stored But Never Enforced
-
-> [!NOTE]
->
-> This is a known issue, the scope field was added but enforcing it was going to
-> be left until we have a more granualar user access model.
-
-**Location**: `app/managers/api_key.py:67-81` (stores), `app/models/api_key.py:28`
-(field), `app/managers/api_key.py:155-248` (validation doesn't check)
-
-- **Issue**: Scopes are stored in database but **never validated anywhere**. API
-  keys with "read-only" scope can perform destructive operations. The
-  `ApiKeyAuth.__call__()` validates key but never checks scopes. No middleware or
-  dependency checks scopes against requested routes.
-- **Impact**: HIGH SEVERITY - API keys cannot be limited to specific permissions. A
-  compromised read-only API key could be used for destructive operations.
-- **Fix**:
-  - Add scope validation in `ApiKeyAuth.__call__()`
-  - Create scope decorators for routes (e.g., `@require_scope("users:write")`)
-  - Document scope format and enforcement
-
 ### 5. Sensitive Data in Request Logs
 
 > [!NOTE]
