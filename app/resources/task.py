@@ -206,7 +206,12 @@ async def create_task(
     db.add(task)
     await db.flush()
     await db.refresh(task)
-    return _task_response(task)
+    task_with_rooms = (
+        await db.execute(
+            select(Task).where(Task.id == task.id).options(selectinload(Task.rooms))
+        )
+    ).scalar_one()
+    return _task_response(task_with_rooms)
 
 
 @router.get(
