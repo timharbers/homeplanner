@@ -64,7 +64,7 @@ class TaskDashboardStats(BaseModel):
 class TaskSuggestion(TaskResponse):
     """Response schema for task suggestions."""
 
-    reason: str
+    reason: str | None = None
 
 
 class PaginatedTasksResponse(BaseModel):

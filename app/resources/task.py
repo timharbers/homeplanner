@@ -215,6 +215,33 @@ async def create_task(
 
 
 @router.get(
+    "/suggestions",
+    dependencies=[Depends(get_current_user)],
+    response_model=list[TaskSuggestion],
+    summary="Get smart task suggestions",
+    description="Fetch top 1–3 recommended tasks with reasoning.",
+)
+async def get_task_suggestions(
+    db: Annotated[AsyncSession, Depends(get_database)],
+) -> list[TaskSuggestion]:
+    """Get task suggestions."""
+    stmt = (
+        select(Task)
+        .where(Task.status != TaskStatus.done)
+        .order_by(Task.priority.desc(), Task.created_at.asc())
+        .limit(3)
+        .options(selectinload(Task.rooms))
+    )
+    tasks = (await db.execute(stmt)).scalars().all()
+    suggestions: list[TaskSuggestion] = []
+    for task in tasks:
+        suggestion = TaskSuggestion.model_validate(task)
+        suggestion.reason = "Highest priority in queue"
+        suggestions.append(suggestion)
+    return suggestions
+
+
+@router.get(
     "/{task_id}",
     dependencies=[Depends(get_current_user)],
     response_model=TaskDetailsResponse,
@@ -479,28 +506,3 @@ async def get_dashboard_stats(
     )
 
 
-@router.get(
-    "/suggestions",
-    dependencies=[Depends(get_current_user)],
-    response_model=list[TaskSuggestion],
-    summary="Get smart task suggestions",
-    description="Fetch top 1–3 recommended tasks with reasoning.",
-)
-async def get_task_suggestions(
-    db: Annotated[AsyncSession, Depends(get_database)],
-) -> list[TaskSuggestion]:
-    """Get task suggestions."""
-    stmt = (
-        select(Task)
-        .where(Task.status != TaskStatus.done)
-        .order_by(Task.priority.desc(), Task.created_at.asc())
-        .limit(3)
-        .options(selectinload(Task.rooms))
-    )
-    tasks = (await db.execute(stmt)).scalars().all()
-    suggestions: list[TaskSuggestion] = []
-    for task in tasks:
-        suggestion = TaskSuggestion.model_validate(task)
-        suggestion.reason = "Highest priority in queue"
-        suggestions.append(suggestion)
-    return suggestions
