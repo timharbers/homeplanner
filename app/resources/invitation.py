@@ -155,6 +155,19 @@ async def accept_invitation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invitation already used or expired",
         )
+    existing_member = (
+        await db.execute(
+            select(household_members.c.user_id).where(
+                household_members.c.household_id == invitation.household_id,
+                household_members.c.user_id == user.id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing_member:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User is already a household member",
+        )
     invitation.status = InvitationStatus.accepted
     await db.execute(
         household_members.insert().values(
