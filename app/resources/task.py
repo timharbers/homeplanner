@@ -215,6 +215,37 @@ async def create_task(
 
 
 @router.get(
+    "/stats",
+    dependencies=[Depends(get_current_user)],
+    response_model=TaskDashboardStats,
+    summary="Get dashboard statistics",
+    description="Fetch aggregated task counts for the household.",
+)
+async def get_dashboard_stats(
+    db: Annotated[AsyncSession, Depends(get_database)],
+) -> TaskDashboardStats:
+    """Get task dashboard stats."""
+    total_open = (
+        await db.execute(
+            select(func.count()).where(Task.status != TaskStatus.done)
+        )
+    ).scalar_one()
+    total_blocked = (
+        await db.execute(
+            select(func.count()).where(Task.status == TaskStatus.blocked)
+        )
+    ).scalar_one()
+    total_completed = (
+        await db.execute(
+            select(func.count()).where(Task.status == TaskStatus.done)
+        )
+    ).scalar_one()
+    return TaskDashboardStats(
+        open=total_open, blocked=total_blocked, completed=total_completed
+    )
+
+
+@router.get(
     "/suggestions",
     dependencies=[Depends(get_current_user)],
     response_model=list[TaskSuggestion],
@@ -272,7 +303,7 @@ async def update_task(
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> TaskResponse:
     """Update a task."""
-    task = await _get_task_or_404(db, task_id)
+    task = await _get_task_or_404(db, task_id, load_dependencies=True)
     if task_data.title is not None:
         task.title = task_data.title
     if task_data.description is not None:
@@ -335,7 +366,7 @@ async def delete_task(
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> Response:
     """Delete a task."""
-    task = await _get_task_or_404(db, task_id)
+    task = await _get_task_or_404(db, task_id, load_dependencies=True)
     await db.delete(task)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -396,7 +427,7 @@ async def add_task_dependency(
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> Response:
     """Add a task dependency."""
-    task = await _get_task_or_404(db, task_id)
+    task = await _get_task_or_404(db, task_id, load_dependencies=True)
     dependency = await _get_task_or_404(db, request.depends_on_task_id)
     if await _would_create_cycle(db, task_id, request.depends_on_task_id):
         raise HTTPException(
@@ -473,36 +504,5 @@ async def update_task_status(
     await db.flush()
     await db.refresh(task)
     return _task_response(task)
-
-
-@router.get(
-    "/stats",
-    dependencies=[Depends(get_current_user)],
-    response_model=TaskDashboardStats,
-    summary="Get dashboard statistics",
-    description="Fetch aggregated task counts for the household.",
-)
-async def get_dashboard_stats(
-    db: Annotated[AsyncSession, Depends(get_database)],
-) -> TaskDashboardStats:
-    """Get task dashboard stats."""
-    total_open = (
-        await db.execute(
-            select(func.count()).where(Task.status != TaskStatus.done)
-        )
-    ).scalar_one()
-    total_blocked = (
-        await db.execute(
-            select(func.count()).where(Task.status == TaskStatus.blocked)
-        )
-    ).scalar_one()
-    total_completed = (
-        await db.execute(
-            select(func.count()).where(Task.status == TaskStatus.done)
-        )
-    ).scalar_one()
-    return TaskDashboardStats(
-        open=total_open, blocked=total_blocked, completed=total_completed
-    )
 
 
