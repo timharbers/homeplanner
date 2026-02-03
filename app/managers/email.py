@@ -42,6 +42,21 @@ class EmailManager:
             SUPPRESS_SEND=1 if suppress_send else 0,
         )
 
+    async def _send_safe(
+        self, message: MessageSchema, template_name: str | None = None
+    ) -> None:
+        """Send email and suppress failures to avoid 500s."""
+        try:
+            fm = FastMail(self.conf)
+            if template_name:
+                await fm.send_message(message, template_name=template_name)
+            else:
+                await fm.send_message(message)
+        except Exception as exc:
+            category_logger.error(
+                f"Failed to send email: {exc}", LogCategory.ERRORS
+            )
+
     async def simple_send(self, email_data: EmailSchema) -> JSONResponse:
         """Send a plain email with a subject and message."""
         message = MessageSchema(
@@ -82,7 +97,7 @@ class EmailManager:
         )
 
         fm = FastMail(self.conf)
-        backgroundtasks.add_task(fm.send_message, message)
+        backgroundtasks.add_task(self._send_safe, message)
 
         recipients_list = email_data.recipients
         category_logger.info(
@@ -103,7 +118,9 @@ class EmailManager:
         )
         fm = FastMail(self.conf)
         backgroundtasks.add_task(
-            fm.send_message, message, template_name=email_data.template_name
+            self._send_safe,
+            message,
+            email_data.template_name,
         )
 
         recipients = ", ".join(r.email for r in email_data.recipients)
