@@ -90,7 +90,7 @@ async def _would_create_cycle(
             task_dependencies.c.depends_on_task_id,
         )
     )
-    edges = result.all()
+    edges: list[tuple[UUID, UUID]] = list(result.tuples().all())
     adjacency = _build_dependency_graph(edges)
     adjacency.setdefault(task_id, set()).add(depends_on_task_id)
     return _has_path(adjacency, depends_on_task_id, task_id)

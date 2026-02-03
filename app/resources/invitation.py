@@ -165,7 +165,7 @@ async def accept_invitation(
     invitation_id: UUID,
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
-) -> dict:
+) -> dict[str, str]:
     """Accept an invitation."""
     invitation = await db.get(Invitation, invitation_id)
     if not invitation:
