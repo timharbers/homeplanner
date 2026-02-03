@@ -6,15 +6,19 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
+from pydantic import NameEmail
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config.settings import get_settings
 from app.database.db import get_database
+from app.managers.email import EmailManager
 from app.managers.security import get_current_user
 from app.models.household import household_members
 from app.models.invitation import Invitation, InvitationStatus
 from app.models.user import User
+from app.schemas.email import EmailSchema
 from app.schemas.request.invitation import CreateInvitationRequest
 from app.schemas.response.invitation import InvitationResponse
 
@@ -81,6 +85,7 @@ async def get_invitations(
 async def invite_user(
     request: CreateInvitationRequest,
     user: Annotated[User, Depends(get_current_user)],
+    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> InvitationResponse:
     """Create an invitation for the user's household."""
@@ -99,6 +104,24 @@ async def invite_user(
     )
     db.add(invitation)
     await db.flush()
+    await db.refresh(invitation)
+
+    settings = get_settings()
+    accept_url = (
+        f"{settings.base_url}{settings.api_root}/invitations/{invitation.id}/accept"
+    )
+    email_manager = EmailManager()
+    email_manager.background_send(
+        background_tasks,
+        EmailSchema(
+            recipients=[NameEmail(request.email, request.email)],
+            subject=f"You're invited to join {settings.api_title}",
+            body=(
+                "<p>You have been invited to join a household.</p>"
+                f"<p>Accept the invitation: <a href=\"{accept_url}\">{accept_url}</a></p>"
+            ),
+        ),
+    )
     return _invitation_response(invitation)
 
 
