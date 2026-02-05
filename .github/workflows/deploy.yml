@@ -37,12 +37,12 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push $GCP_REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:$GITHUB_SHA
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy $SERVICE \
             --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:$GITHUB_SHA \
-            --region $GCP_REGION \
+            --region $REGION \
             --platform managed \
             --allow-unauthenticated
