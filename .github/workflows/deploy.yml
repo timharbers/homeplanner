@@ -5,11 +5,11 @@ on:
     branches: [ "main" ]
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION }}
-  SERVICE: myapp
-  REPO: myapp-repo
-  IMAGE: myapp
+  PROJECT_ID: ${{ GCP_PROJECT_ID }}
+  REGION: ${{ GCP_REGION }}
+  SERVICE: homeplanner-api
+  REPO: homeplanner-api-repo
+  IMAGE: homeplanner-api-image
 
 jobs:
   deploy:
@@ -37,12 +37,12 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:$GITHUB_SHA
+          docker push $GCP_REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:$GITHUB_SHA
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy $SERVICE \
             --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO/$IMAGE:$GITHUB_SHA \
-            --region $REGION \
+            --region $GCP_REGION \
             --platform managed \
             --allow-unauthenticated
