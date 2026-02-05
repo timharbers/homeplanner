@@ -29,7 +29,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENV PATH="/app/.venv/bin:$PATH"
 ENV DOCKER_RUNNING=1
 
-EXPOSE 8001
+EXPOSE 8080
 
 # Running the application
-CMD ["uvicorn", "--host", "0.0.0.0", "--port","8001","app.main:app", "--reload"]
+CMD ["uvicorn", "--host", "0.0.0.0", "--port","8080","app.main:app", "--reload"]
