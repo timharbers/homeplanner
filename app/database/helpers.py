@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 from typing import Any
+
 from passlib.context import CryptContext
 from sqlalchemy import insert, select, text
 from sqlalchemy.exc import SQLAlchemyError

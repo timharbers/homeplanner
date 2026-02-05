@@ -13,6 +13,7 @@ env:
 
 jobs:
   deploy:
+    environment: GCP
     runs-on: ubuntu-latest
 
     steps:

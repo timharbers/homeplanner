@@ -52,7 +52,7 @@ class EmailManager:
                 await fm.send_message(message, template_name=template_name)
             else:
                 await fm.send_message(message)
-        except Exception as exc:
+        except (OSError, ValueError) as exc:
             category_logger.error(
                 f"Failed to send email: {exc}", LogCategory.ERRORS
             )
@@ -96,7 +96,6 @@ class EmailManager:
             subtype=MessageType.html,
         )
 
-        fm = FastMail(self.conf)
         backgroundtasks.add_task(self._send_safe, message)
 
         recipients_list = email_data.recipients
@@ -116,7 +115,6 @@ class EmailManager:
             subtype=MessageType.html,
             template_body=email_data.body,
         )
-        fm = FastMail(self.conf)
         backgroundtasks.add_task(
             self._send_safe,
             message,

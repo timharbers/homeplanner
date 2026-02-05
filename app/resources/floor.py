@@ -19,9 +19,10 @@ router = APIRouter(tags=["Floors"], prefix="/floors")
 @router.get(
     "",
     dependencies=[Depends(get_current_user)],
-    response_model=list[FloorResponse],
     summary="Get floors",
-    description="Fetch list of all floors in the household for dropdown selection.",
+    description=(
+        "Fetch list of all floors in the household for dropdown selection."
+    ),
 )
 async def get_floors(
     db: Annotated[AsyncSession, Depends(get_database)],
@@ -35,7 +36,6 @@ async def get_floors(
 @router.post(
     "",
     dependencies=[Depends(get_current_user)],
-    response_model=FloorResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create floor",
     description="Create a new floor for the household.",
@@ -57,7 +57,6 @@ async def create_floor(
 @router.put(
     "/{floor_id}",
     dependencies=[Depends(get_current_user)],
-    response_model=FloorResponse,
     summary="Update floor",
     description="Update floor details.",
 )
