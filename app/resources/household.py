@@ -2,28 +2,25 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from app.database.db import get_database
 from app.managers.security import get_current_user
 from app.models.household import Household, HouseholdRole, household_members
+from app.models.user import User  # noqa: TC001
+from app.schemas.request.household import (  # noqa: TC001
+    CreateHouseholdRequest,
+    UpdateHouseholdRequest,
+)
 from app.schemas.response.household import (
     HouseholdMemberResponse,
     HouseholdResponse,
 )
-
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
-
-    from app.models.user import User
-    from app.schemas.request.household import (
-        CreateHouseholdRequest,
-        UpdateHouseholdRequest,
-    )
 
 router = APIRouter(tags=["Household"], prefix="/household")
 
