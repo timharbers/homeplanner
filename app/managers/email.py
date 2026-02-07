@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import socket
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -42,10 +43,25 @@ class EmailManager:
             SUPPRESS_SEND=1 if suppress_send else 0,
         )
 
+    def _log_smtp_connection_info(self) -> None:
+        """Log SMTP connection details for debugging."""
+        hostname = self.conf.MAIL_SERVER
+        port = self.conf.MAIL_PORT
+        try:
+            resolved_ip = socket.gethostbyname(hostname)
+        except socket.gaierror:
+            resolved_ip = "Unable to resolve"
+        category_logger.info(
+            f"SMTP connection: hostname={hostname}, "
+            f"resolved_ip={resolved_ip}, port={port}",
+            LogCategory.EMAIL,
+        )
+
     async def _send_safe(
         self, message: MessageSchema, template_name: str | None = None
     ) -> None:
         """Send email and suppress failures to avoid 500s."""
+        self._log_smtp_connection_info()
         try:
             fm = FastMail(self.conf)
             if template_name:
@@ -66,6 +82,7 @@ class EmailManager:
             subtype=MessageType.html,
         )
 
+        self._log_smtp_connection_info()
         try:
             fm = FastMail(self.conf)
             await fm.send_message(message)
