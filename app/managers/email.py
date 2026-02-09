@@ -56,6 +56,7 @@ class EmailManager:
             f"resolved_ip={resolved_ip}, port={port}",
             LogCategory.EMAIL,
         )
+        print(f"SMTP connection: hostname={hostname},resolved_ip={resolved_ip}, port={port}")
 
     async def _send_safe(
         self, message: MessageSchema, template_name: str | None = None
