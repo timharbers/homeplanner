@@ -650,7 +650,21 @@ paths:
           description: Invalid input
         "401":
           description: Unauthorized
-
+    delete:
+      operationId: deleteCurrentUser
+      summary: Delete current user account
+      description: Permanently delete the authenticated user's account and all associated data.
+        If the user is the owner of a household, ownership must be transferred or
+        the household must be deleted before the account can be removed.
+      tags:
+        - Users
+      responses:
+        "204":
+          description: User account deleted successfully
+        "400":
+          description: Cannot delete account while owning a household – transfer ownership or delete the household first
+        "401":
+          description: Unauthorized
   /floors:
     get:
       operationId: getFloors

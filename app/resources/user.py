@@ -50,6 +50,23 @@ async def get_my_user(
     return await UserManager.get_user_by_id(my_user, db)
 
 
+@router.delete(
+    "/me",
+    dependencies=[Depends(get_current_user)],
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete current user",
+    description="Delete the currently authenticated user's account.",
+)
+async def delete_my_user(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_database)],
+) -> None:
+    """Delete the current user's account."""
+    user_id: int = request.state.user.id
+    await UserManager.delete_user(user_id, db)
+    await invalidate_user_related_caches(user_id)
+
+
 @router.post(
     "/{user_id}/make-admin",
     dependencies=[Depends(get_current_user), Depends(is_admin)],
