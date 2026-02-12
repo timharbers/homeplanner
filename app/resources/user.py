@@ -23,6 +23,7 @@ from app.schemas.request.user import (
     SearchField,
     UserChangePasswordRequest,
     UserEditRequest,
+    UserUpdateProfileRequest,
 )
 from app.schemas.response.user import MyUserResponse, UserResponse
 
@@ -65,6 +66,25 @@ async def delete_my_user(
     user_id: int = request.state.user.id
     await UserManager.delete_user(user_id, db)
     await invalidate_user_related_caches(user_id)
+
+
+@router.patch(
+    "/me",
+    dependencies=[Depends(get_current_user)],
+    response_model=MyUserResponse,
+    summary="Update current user profile",
+    description="Update the current user's first name and/or last name.",
+)
+async def update_my_profile(
+    request: Request,
+    user_data: UserUpdateProfileRequest,
+    db: Annotated[AsyncSession, Depends(get_database)],
+) -> User:
+    """Update the current user's profile."""
+    user_id: int = request.state.user.id
+    user = await UserManager.update_profile(user_id, user_data, db)
+    await invalidate_user_related_caches(user_id)
+    return user
 
 
 @router.post(

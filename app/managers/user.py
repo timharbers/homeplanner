@@ -42,6 +42,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from app.schemas.request.user import (
         UserChangePasswordRequest,
         UserEditRequest,
+        UserUpdateProfileRequest,
     )
 
 
@@ -361,6 +362,31 @@ class UserManager:
         category_logger.info(
             f"Password changed for user ID {user_id}", LogCategory.DATABASE
         )
+
+    @staticmethod
+    async def update_profile(
+        user_id: int,
+        user_data: UserUpdateProfileRequest,
+        session: AsyncSession,
+    ) -> User:
+        """Update a user's profile (first name and/or last name)."""
+        user = await UserManager.get_user_by_id(user_id, session)
+
+        updates: dict[str, str] = {}
+        if user_data.first_name is not None:
+            updates["first_name"] = user_data.first_name
+        if user_data.last_name is not None:
+            updates["last_name"] = user_data.last_name
+
+        if updates:
+            await session.execute(
+                update(User).where(User.id == user_id).values(**updates)
+            )
+            category_logger.info(
+                f"Profile updated for user ID {user_id}", LogCategory.DATABASE
+            )
+
+        return await UserManager.get_user_by_id(user_id, session)
 
     @staticmethod
     async def set_ban_status(

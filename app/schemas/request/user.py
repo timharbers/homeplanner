@@ -63,3 +63,14 @@ class UserChangePasswordRequest(BaseModel):
     """Request Schema for changing a user's password."""
 
     password: str = Field(examples=[ExampleUser.password], max_length=128)
+
+
+class UserUpdateProfileRequest(BaseModel):
+    """Request schema for updating a user's profile (name only)."""
+
+    first_name: str | None = Field(
+        default=None, examples=[ExampleUser.first_name], max_length=30
+    )
+    last_name: str | None = Field(
+        default=None, examples=[ExampleUser.last_name], max_length=50
+    )
