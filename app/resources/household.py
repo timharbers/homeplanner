@@ -59,7 +59,7 @@ async def _get_members(
     for row in result.all():
         members.append(
             HouseholdMemberResponse(
-                userId=UUID(int=row.user_id),
+                userId=row.user_id,
                 role=row.role,
                 joinedAt=row.joined_at,
             )
@@ -74,7 +74,7 @@ def _household_response(
         id=household.id,
         name=household.name,
         createdAt=household.created_at,
-        ownerId=UUID(int=household.owner_id),
+        ownerId=household.owner_id,
         members=members,
     )
 
@@ -233,14 +233,14 @@ async def leave_household(
     ),
 )
 async def remove_household_member(
-    user_id: UUID,
+    user_id: int,
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> Response:
     """Remove a household member."""
     current_user_id = user.id
     household = await _get_household_for_user(db, current_user_id)
-    if household.owner_id != current_user_id and UUID(int=current_user_id) != user_id:
+    if household.owner_id != current_user_id and current_user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden – insufficient permissions",
@@ -248,7 +248,7 @@ async def remove_household_member(
     membership = await db.execute(
         select(household_members.c.user_id).where(
             household_members.c.household_id == household.id,
-            household_members.c.user_id == user_id.int,
+            household_members.c.user_id == user_id,
         )
     )
     if not membership.scalar_one_or_none():
@@ -259,7 +259,7 @@ async def remove_household_member(
     await db.execute(
         delete(household_members).where(
             household_members.c.household_id == household.id,
-            household_members.c.user_id == user_id.int,
+            household_members.c.user_id == user_id,
         )
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
