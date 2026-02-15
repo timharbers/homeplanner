@@ -32,7 +32,7 @@ class TaskResponse(BaseModel):
     priority: int
     difficulty: int
     status: TaskStatus
-    assigned_user_id: UUID | None = Field(default=None, alias="assignedUserId")
+    assigned_user_id: UUID | None = None
     rooms: list[RoomResponse] = Field(default_factory=list)
 
 
@@ -42,15 +42,15 @@ class TaskDetailsResponse(TaskResponse):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     dependencies: list[TaskSummary] = Field(default_factory=list)
-    created_at: datetime | None = Field(default=None, alias="createdAt")
-    updated_at: datetime | None = Field(default=None, alias="updatedAt")
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class TaskDependencyGraph(BaseModel):
     """Response schema for task dependency graph."""
 
-    dependsOn: list[TaskSummary] = Field(default_factory=list)
-    dependedBy: list[TaskSummary] = Field(default_factory=list)
+    depends_on: list[TaskSummary] = Field(default_factory=list)
+    depended_by: list[TaskSummary] = Field(default_factory=list)
 
 
 class TaskDashboardStats(BaseModel):
@@ -72,5 +72,5 @@ class PaginatedTasksResponse(BaseModel):
 
     items: list[TaskResponse]
     page: int
-    pageSize: int
+    page_size: int
     total: int

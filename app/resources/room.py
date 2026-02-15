@@ -199,9 +199,9 @@ async def get_room_stats(
         )
     ).scalar_one()
     return RoomStatsResponse(
-        totalTasks=total,
+        total_tasks=total,
         completed=completed,
-        inProgress=in_progress,
+        in_progress=in_progress,
         blocked=blocked,
     )
 

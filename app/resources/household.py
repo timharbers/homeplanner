@@ -63,11 +63,11 @@ async def _get_members(
     for row in result.all():
         members.append(
             HouseholdMemberResponse(
-                userId=row.user_id,
-                firstName=row.first_name,
-                lastName=row.last_name,
+                user_id=row.user_id,
+                first_name=row.first_name,
+                last_name=row.last_name,
                 role=row.role,
-                joinedAt=row.joined_at,
+                joined_at=row.joined_at,
             )
         )
     return members
@@ -79,8 +79,8 @@ def _household_response(
     return HouseholdResponse(
         id=household.id,
         name=household.name,
-        createdAt=household.created_at,
-        ownerId=household.owner_id,
+        created_at=household.created_at,
+        owner_id=household.owner_id,
         members=members,
     )
 

@@ -20,9 +20,9 @@ class RoomResponse(BaseModel):
 class RoomStatsResponse(BaseModel):
     """Response schema for room statistics."""
 
-    totalTasks: int = 0
+    total_tasks: int = 0
     completed: int = 0
-    inProgress: int = 0
+    in_progress: int = 0
     blocked: int = 0
 
 
@@ -31,5 +31,5 @@ class RoomDetailsResponse(RoomResponse):
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-    createdAt: datetime | None = Field(default=None, alias="created_at")
+    created_at: datetime | None = None
     stats: RoomStatsResponse = Field(default_factory=RoomStatsResponse)

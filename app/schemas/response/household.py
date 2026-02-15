@@ -9,11 +9,11 @@ from pydantic import BaseModel, ConfigDict, Field
 class HouseholdMemberResponse(BaseModel):
     """Response schema for a household member."""
 
-    userId: int = Field(alias="userId")
-    firstName: str = Field(alias="firstName")
-    lastName: str = Field(alias="lastName")
+    user_id: int
+    first_name: str
+    last_name: str
     role: str
-    joinedAt: datetime = Field(alias="joinedAt")
+    joined_at: datetime
 
 
 class HouseholdResponse(BaseModel):
@@ -23,6 +23,6 @@ class HouseholdResponse(BaseModel):
 
     id: UUID
     name: str
-    created_at: datetime = Field(alias="createdAt")
-    owner_id: int = Field(alias="ownerId")
+    created_at: datetime
+    owner_id: int
     members: list[HouseholdMemberResponse] = Field(default_factory=list)

@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.models.invitation import InvitationStatus
 
@@ -15,8 +15,8 @@ class InvitationResponse(BaseModel):
 
     id: UUID
     email: EmailStr
-    household_id: UUID = Field(alias="householdId")
-    invited_by_user_id: UUID = Field(alias="invitedByUserId")
+    household_id: UUID
+    invited_by_user_id: UUID
     status: InvitationStatus
-    created_at: datetime = Field(alias="createdAt")
-    expires_at: datetime = Field(alias="expiresAt")
+    created_at: datetime
+    expires_at: datetime

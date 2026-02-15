@@ -156,7 +156,7 @@ async def get_tasks(
     return PaginatedTasksResponse(
         items=[_task_response(task) for task in tasks],
         page=page,
-        pageSize=page_size,
+        page_size=page_size,
         total=total,
     )
 
@@ -476,8 +476,8 @@ async def get_task_dependency_graph(
     """Get a task dependency graph."""
     task = await _get_task_or_404(db, task_id, load_dependencies=True)
     return TaskDependencyGraph(
-        dependsOn=[_task_summary(dep) for dep in task.depends_on],
-        dependedBy=[_task_summary(dep) for dep in task.depended_by],
+        depends_on=[_task_summary(dep) for dep in task.depends_on],
+        depended_by=[_task_summary(dep) for dep in task.depended_by],
     )
 
 

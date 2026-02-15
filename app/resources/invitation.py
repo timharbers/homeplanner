@@ -40,11 +40,11 @@ def _invitation_response(invitation: Invitation) -> InvitationResponse:
     return InvitationResponse(
         id=invitation.id,
         email=invitation.email,
-        householdId=invitation.household_id,
-        invitedByUserId=UUID(int=invitation.invited_by_user_id),
+        household_id=invitation.household_id,
+        invited_by_user_id=UUID(int=invitation.invited_by_user_id),
         status=invitation.status,
-        createdAt=invitation.created_at,
-        expiresAt=invitation.expires_at,
+        created_at=invitation.created_at,
+        expires_at=invitation.expires_at,
     )
 
 
