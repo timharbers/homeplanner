@@ -53,13 +53,19 @@ async def _get_members(
             household_members.c.user_id,
             household_members.c.role,
             household_members.c.joined_at,
-        ).where(household_members.c.household_id == household_id)
+            User.first_name,
+            User.last_name,
+        )
+        .join(User, User.id == household_members.c.user_id)
+        .where(household_members.c.household_id == household_id)
     )
     members = []
     for row in result.all():
         members.append(
             HouseholdMemberResponse(
                 userId=row.user_id,
+                firstName=row.first_name,
+                lastName=row.last_name,
                 role=row.role,
                 joinedAt=row.joined_at,
             )

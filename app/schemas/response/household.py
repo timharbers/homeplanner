@@ -10,6 +10,8 @@ class HouseholdMemberResponse(BaseModel):
     """Response schema for a household member."""
 
     userId: int = Field(alias="userId")
+    firstName: str = Field(alias="firstName")
+    lastName: str = Field(alias="lastName")
     role: str
     joinedAt: datetime = Field(alias="joinedAt")
 
