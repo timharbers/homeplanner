@@ -17,7 +17,9 @@ from app.models import task as _task  # noqa: F401
 app = typer.Typer(no_args_is_help=True, rich_markup_mode="rich")
 
 async_engine = create_async_engine(
-    get_database_url(use_test_db=True), echo=False
+    get_database_url(use_test_db=True),
+    echo=False,
+    connect_args={"prepared_statement_cache_size": 0},
 )
 
 
