@@ -109,7 +109,7 @@ async def _would_create_cycle(
 async def get_tasks(
     db: Annotated[AsyncSession, Depends(get_database)],
     room_id: UUID | None = None,
-    assigned_user_id: UUID | None = None,
+    assigned_user_id: int | None = None,
     priority: int | None = None,
     difficulty: int | None = None,
     status: TaskStatus | None = None,

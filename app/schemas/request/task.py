@@ -16,7 +16,7 @@ class CreateTaskRequest(BaseModel):
     description: str | None = None
     priority: int = Field(ge=1, le=5)
     difficulty: int = Field(ge=1, le=5)
-    assigned_user_id: UUID | None = None
+    assigned_user_id: int | None = None
     status: TaskStatus | None = None
     room_ids: list[UUID] | None = None
     dependency_ids: list[UUID] | None = None
@@ -31,7 +31,7 @@ class UpdateTaskRequest(BaseModel):
     description: str | None = None
     priority: int | None = Field(default=None, ge=1, le=5)
     difficulty: int | None = Field(default=None, ge=1, le=5)
-    assigned_user_id: UUID | None = None
+    assigned_user_id: int | None = None
     status: TaskStatus | None = None
     room_ids: list[UUID] | None = None
     dependency_ids: list[UUID] | None = None

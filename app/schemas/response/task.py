@@ -32,7 +32,7 @@ class TaskResponse(BaseModel):
     priority: int
     difficulty: int
     status: TaskStatus
-    assigned_user_id: UUID | None = None
+    assigned_user_id: int | None = None
     rooms: list[RoomResponse] = Field(default_factory=list)
 
 
