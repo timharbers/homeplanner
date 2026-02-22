@@ -96,6 +96,38 @@ async def _would_create_cycle(
     return _has_path(adjacency, depends_on_task_id, task_id)
 
 
+def _has_incomplete_dependencies(task: Task) -> bool:
+    """Check if any dependency is not done."""
+    return any(dep.status != TaskStatus.done for dep in task.depends_on)
+
+
+async def _update_blocked_status(db: AsyncSession, task: Task) -> None:
+    """Update task blocked status based on dependencies."""
+    if _has_incomplete_dependencies(task):
+        if task.status != TaskStatus.blocked:
+            task.status = TaskStatus.blocked
+    elif task.status == TaskStatus.blocked:
+        task.status = TaskStatus.not_started
+
+
+async def _unblock_dependent_tasks(db: AsyncSession, completed_task: Task) -> None:
+    """Unblock tasks that depend on the completed task if all their deps are done."""
+    dependent_tasks = (
+        await db.execute(
+            select(Task)
+            .join(
+                task_dependencies,
+                Task.id == task_dependencies.c.task_id,
+            )
+            .where(task_dependencies.c.depends_on_task_id == completed_task.id)
+            .options(selectinload(Task.depends_on))
+        )
+    ).scalars().all()
+
+    for task in dependent_tasks:
+        await _update_blocked_status(db, task)
+
+
 @router.get(
     "",
     dependencies=[Depends(get_current_user)],
@@ -202,6 +234,7 @@ async def create_task(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
             )
         task.depends_on = dependencies
+        await _update_blocked_status(db, task)
 
     db.add(task)
     await db.flush()
@@ -304,6 +337,7 @@ async def update_task(
 ) -> TaskResponse:
     """Update a task."""
     task = await _get_task_or_404(db, task_id, load_dependencies=True)
+    status_changed_to_done = False
     if task_data.title is not None:
         task.title = task_data.title
     if task_data.description is not None:
@@ -313,6 +347,8 @@ async def update_task(
     if task_data.difficulty is not None:
         task.difficulty = task_data.difficulty
     if task_data.status is not None:
+        if task_data.status == TaskStatus.done and task.status != TaskStatus.done:
+            status_changed_to_done = True
         task.status = task_data.status
     if task_data.assigned_user_id is not None:
         task.assigned_user_id = task_data.assigned_user_id
@@ -348,6 +384,10 @@ async def update_task(
             task.depends_on = dependencies
         else:
             task.depends_on = []
+        await _update_blocked_status(db, task)
+
+    if status_changed_to_done:
+        await _unblock_dependent_tasks(db, task)
 
     await db.flush()
     await db.refresh(task)
@@ -436,6 +476,7 @@ async def add_task_dependency(
         )
     if dependency not in task.depends_on:
         task.depends_on.append(dependency)
+        await _update_blocked_status(db, task)
     await db.flush()
     return Response(status_code=status.HTTP_201_CREATED)
 
@@ -459,6 +500,9 @@ async def delete_task_dependency(
             task_dependencies.c.depends_on_task_id == depends_on_task_id,
         )
     )
+    task = await _get_task_or_404(db, task_id, load_dependencies=True)
+    await _update_blocked_status(db, task)
+    await db.flush()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
