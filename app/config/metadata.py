@@ -7,18 +7,18 @@ Be aware, this will be re-generated any time you run the
 from app.config.helpers import MetadataBase
 
 custom_metadata = MetadataBase(
-    title="API Template",
-    name="api-template",
-    description="Run 'api-admin custom metadata' to change this information.",
-    repository="https://github.com/seapagan/fastapi-template",
+    title="SettleGuide.app",
+    name="settle-guide",
+    description="SettleGuide is a smart post-move task planner that organizes your new home setup by room, priority, and dependencies — so you always know what to tackle next.",
+    repository="https://github.com/timharbers/homeplanner",
     license_info={
         "name": "MIT",
         "url": "https://opensource.org/licenses/MIT",
     },
     contact={
-        "name": "Grant Ramsay (seapagan)",
-        "url": "https://www.gnramsay.com",
+        "name": "Tim Harbers",
+        "url": "https://www.settleguide.app",
     },
-    email="seapagan@gmail.com",
-    year="2022-2026",
+    email="twhf.harbers@gmail.com",
+    year="2026",
 )
