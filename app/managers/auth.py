@@ -444,6 +444,8 @@ class AuthManager:
                     "name": user.first_name,
                     "application": get_settings().api_title,
                     "base_url": get_settings().base_url,
+                    "frontend_url": get_settings().frontend_url
+                    or get_settings().base_url,
                     "reset_token": reset_token,
                 },
                 template_name="password_reset.html",
