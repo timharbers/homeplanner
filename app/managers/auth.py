@@ -601,6 +601,8 @@ class AuthManager:
                     "application": f"{get_settings().api_title}",
                     "user": user_data.email,
                     "base_url": get_settings().base_url,
+                    "frontend_url": get_settings().frontend_url
+                    or get_settings().base_url,
                     "verification": AuthManager.encode_verify_token(user_data),
                 },
                 template_name="welcome.html",

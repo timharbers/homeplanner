@@ -1,181 +1,125 @@
 [project]
-name = "api-template"
-version = "0.8.0"
-description = "Run 'api-admin custom metadata' to change this information."
-authors = [{ name = "Grant Ramsay", email = "seapagan@gmail.com" }]
+name = "settle-guide"
+version = "0.9.0"
+description = "SettleGuide is a smart post-move task planner that organizes your new home setup by room, priority, and dependencies — so you always know what to tackle next."
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = ["Private :: Do Not Upload"]
-dependencies = [
-  "alembic>=1.14.0",
-  "anyio>=4.6.2.post1",
-  "asyncclick>=8.1.7.2",
-  "async-timeout==5.0.1 ; python_version < '3.12'",
-  "asyncpg>=0.30.0",
-  "email-validator>=2.2.0",
-  "fastapi[standard]>=0.115.4",
-  "pydantic>=2.9.2",
-  "pydantic-settings>=2.6.1",
-  "prometheus-fastapi-instrumentator>=7.0.0",
-  "pyjwt>=2.9.0",
-  "python-decouple>=3.8",
-  "rich>=13.9.4",
-  "rtoml>=0.11.0",
-  "jinja2>=3.1.4",
-  "fastapi-mail>=1.4.1",
-  "httpx>=0.27.2",
-  "uvicorn[standard]>=0.32.0",
-  "sqlalchemy[asyncio]>=2.0.36",
-  "typer>=0.12.5",
-  "libpass[bcrypt]>=1.9.0",
-  "bcrypt>=4.0.1",
-  "sqladmin[full]>=0.20.1",
-  "fastapi-pagination>=0.12.34",
-  "loguru>=0.7.2",
-  "fastapi-cache2[redis]>=0.2.2",
-  "slowapi>=0.1.9",
-]
+dependencies = ["alembic>=1.14.0", "anyio>=4.6.2.post1", "asyncclick>=8.1.7.2", "async-timeout==5.0.1 ; python_version < '3.12'", "asyncpg>=0.30.0", "email-validator>=2.2.0", "fastapi[standard]>=0.115.4", "pydantic>=2.9.2", "pydantic-settings>=2.6.1", "prometheus-fastapi-instrumentator>=7.0.0", "pyjwt>=2.9.0", "python-decouple>=3.8", "rich>=13.9.4", "rtoml>=0.11.0", "jinja2>=3.1.4", "fastapi-mail>=1.4.1", "httpx>=0.27.2", "uvicorn[standard]>=0.32.0", "sqlalchemy[asyncio]>=2.0.36", "typer>=0.12.5", "libpass[bcrypt]>=1.9.0", "bcrypt>=4.0.1", "sqladmin[full]>=0.20.1", "fastapi-pagination>=0.12.34", "loguru>=0.7.2", "fastapi-cache2[redis]>=0.2.2", "slowapi>=0.1.9"]
+
+[project.authors]
+name = "Tim Harbers"
+email = "twhf.harbers@gmail.com"
 
 [project.scripts]
 api-admin = "app.api_admin:app"
 
 [build-system]
-requires = ["hatchling"]
 build-backend = "hatchling.build"
-
+requires = ["hatchling"]
 [tool.hatch.build.targets.sdist]
 packages = ["app"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+[tool.uv.sources.mkdocs-swagger-ui-tag]
+git = "https://github.com/seapagan/mkdocs-swagger-ui-tag"
+rev = "fad9a8940bb7544aec63c378319f57b9a443fbaa"
+[tool.poe.tasks.pre]
+cmd = "prek run --all-files"
+help = "Run pre commit checks using prek"
 
-[dependency-groups]
-dev = [
-  "aiosmtpd>=1.4.6",
-  "aiosqlite>=0.20.0",
-  "faker>=30.8.2",
-  "mock>=5.1.0",
-  "mypy>=1.13.0",
-  "poethepoet>=0.29.0",
-  "pyfakefs>=5.7.1",
-  "pymarkdownlnt>=0.9.24",
-  "pytest>=8.3.3",
-  "pytest-asyncio>=0.21.2",
-  "pytest-clarity>=1.0.1",
-  "pytest-cov>=6.0.0",
-  "pytest-env>=1.1.5",
-  "pytest-mock>=3.14.0",
-  "pytest-randomly>=3.16.0",
-  "pytest-reverse>=1.8.0",
-  "pytest-sugar>=1.0.0",
-  "pytest-watcher>=0.4.3",
-  "ruff>=0.7.2",
-  "mkdoc>=0.1",
-  "mkdocs-git-revision-date-localized-plugin>=1.3.0",
-  "mkdocs-latest-git-tag-plugin>=0.1.2",
-  "mkdocs-material>=9.5.43",
-  "mkdocs-minify-plugin>=0.8.0",
-  "pymdown-extensions>=10.12",
-  "pygments>=2.18.0",
-  "types-passlib>=1.7.7.20240819",
-  "asyncpg-stubs>=0.30.0",
-  "github-changelog-md>=0.9.5",
-  "mkdocstrings[python]>=0.26.2",
-  "mkdocs-swagger-ui-tag",
-  "ty>=0.0.5",
-  "prek>=0.2.24",
-  "types-redis>=4.6.0.20241004",
-]
+[tool.poe.tasks.mypy]
+cmd = "mypy . --strict"
+help = "Run mypy checks"
 
-[tool.uv.sources]
-mkdocs-swagger-ui-tag = { git = "https://github.com/seapagan/mkdocs-swagger-ui-tag", rev = "fad9a8940bb7544aec63c378319f57b9a443fbaa" }
+[tool.poe.tasks.format]
+help = "Format code with Ruff"
+cmd = "ruff format ."
 
+[tool.poe.tasks.ruff]
+help = "Run Ruff checks"
+cmd = "ruff check --output-format=concise ."
 
-[tool.poe.tasks]
-# setup PoeThePoet tasks
-pre.cmd = "prek run --all-files"
-pre.help = "Run pre commit checks using prek"
-mypy.cmd = "mypy . --strict"
-mypy.help = "Run mypy checks"
-format.help = "Format code with Ruff"
-format.cmd = "ruff format ."
-ruff.help = "Run Ruff checks"
-ruff.cmd = "ruff check --output-format=concise ."
-markdown.cmd = "pymarkdown --strict-config scan  -r docs/**/*.md"
-markdown.help = "Run markdown checks"
+[tool.poe.tasks.markdown]
+cmd = "pymarkdown --strict-config scan  -r docs/**/*.md"
+help = "Run markdown checks"
 
-# testing tasks
-test.help = "Run all tests using Pytest"
-test.cmd = "pytest"
-"test:unit".help = "Run only Unit tests using Pytest"
-"test:unit".cmd = "pytest -m unit"
-"test:integration".help = "Run only Integration tests using Pytest"
-"test:integration".cmd = "pytest -m integration"
-"test:skipped".cmd = "pytest --quiet --collect-only -m skip --no-cov"
-"test:skipped".help = "Show skipped tests without running all tests"
+[tool.poe.tasks.test]
+help = "Run all tests using Pytest"
+cmd = "pytest"
 
-# Add 'ty' type checker - this is still beta software and has false positives
-# compared to 'mypy', but suspect it will exentually replace it.
-ty.help = "Run the 'ty' type-checker (Alpha pre-release version)"
-ty.cmd = "ty check --output-format concise"
+[tool.poe.tasks."test:unit"]
+help = "Run only Unit tests using Pytest"
+cmd = "pytest -m unit"
 
-# run all linting checks in sequence. we want to run them all, even if one fails
-lint.ignore_fail = "return_non_zero"
-lint.sequence = ["format", "ruff", "mypy", "ty", "markdown"]
-lint.help = "Run all linting checks"
+[tool.poe.tasks."test:integration"]
+help = "Run only Integration tests using Pytest"
+cmd = "pytest -m integration"
 
-# documentation tasks
-"docs:publish".cmd = "mkdocs gh-deploy"
-"docs:publish".help = "Publish documentation to GitHub Pages"
-"docs:build".cmd = "mkdocs build"
-"docs:build".help = "Build documentation locally to './site' folder"
-"docs:serve".cmd = "mkdocs serve -w TODO.md -w CHANGELOG.md -w CONTRIBUTING.md"
-"docs:serve".help = "Serve documentation locally"
-"docs:serve:all".cmd = "mkdocs serve -w TODO.md -w CHANGELOG.md -w CONTRIBUTING.md -a 0.0.0.0:8000"
-"docs:serve:all".help = "Serve documentation locally on all interfaces"
+[tool.poe.tasks."test:skipped"]
+cmd = "pytest --quiet --collect-only -m skip --no-cov"
+help = "Show skipped tests without running all tests"
 
-# regenerate the openapi.json file
-openapi.cmd = "api-admin docs openapi --prefix=docs/reference"
-openapi.help = "Generate an OpenAPI JSON file from this API"
+[tool.poe.tasks.ty]
+help = "Run the 'ty' type-checker (Alpha pre-release version)"
+cmd = "ty check --output-format concise"
 
-# generate the CHANGELOG.md file
-changelog.cmd = "github-changelog-md"
-changelog.help = "Generate the CHANGELOG.md file"
+[tool.poe.tasks.lint]
+ignore_fail = "return_non_zero"
+help = "Run all linting checks"
+sequence = ["format", "ruff", "mypy", "ty", "markdown"]
 
+[tool.poe.tasks."docs:publish"]
+cmd = "mkdocs gh-deploy"
+help = "Publish documentation to GitHub Pages"
 
-# configure assorted tools and linters
-[tool.pymarkdown]
-plugins.md014.enabled = false
-plugins.md046.enabled = false
-plugins.md033.allowed_elements = "!--,![CDATA[,!DOCTYPE,swagger-ui"
-plugins.md013.enabled = false
+[tool.poe.tasks."docs:build"]
+cmd = "mkdocs build"
+help = "Build documentation locally to './site' folder"
+
+[tool.poe.tasks."docs:serve"]
+cmd = "mkdocs serve -w TODO.md -w CHANGELOG.md -w CONTRIBUTING.md"
+help = "Serve documentation locally"
+
+[tool.poe.tasks."docs:serve:all"]
+cmd = "mkdocs serve -w TODO.md -w CHANGELOG.md -w CONTRIBUTING.md -a 0.0.0.0:8000"
+help = "Serve documentation locally on all interfaces"
+
+[tool.poe.tasks.openapi]
+cmd = "api-admin docs openapi --prefix=docs/reference"
+help = "Generate an OpenAPI JSON file from this API"
+
+[tool.poe.tasks.changelog]
+cmd = "github-changelog-md"
+help = "Generate the CHANGELOG.md file"
+[tool.pymarkdown.plugins.md014]
+enabled = false
+
+[tool.pymarkdown.plugins.md046]
+enabled = false
+
+[tool.pymarkdown.plugins.md033]
+allowed_elements = "!--,![CDATA[,!DOCTYPE,swagger-ui"
+
+[tool.pymarkdown.plugins.md013]
+enabled = false
 
 [tool.ruff]
 line-length = 80
+target-version = "py310"
 src = ["app"]
-extend-exclude = [
-  "app/migrations", # auto-generated by alembic so we don't need to check them
-]
-target-version = "py310" # minimum python version supported
+extend-exclude = ["app/migrations"]
 
 [tool.ruff.format]
 indent-style = "space"
 quote-style = "double"
 
 [tool.ruff.lint]
-select = ["ALL"] # we are being very strict!
-ignore = [
-  "PGH003",
-  "FBT002",
-  "FBT003",
-  "B006",
-] # These rules are too strict even for us 😝
-extend-ignore = [
-  "COM812", # ignored for ruff formatting
-  "ISC001", # ignored for ruff formatting
-  "T201",   # temporary ignore for now, will remove when migrate to logging
-]
+select = ["ALL"]
+ignore = ["PGH003", "FBT002", "FBT003", "B006"]
+extend-ignore = ["COM812", "ISC001", "T201"]
 
 [tool.ruff.lint.pep8-naming]
 classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
@@ -184,28 +128,12 @@ classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
 convention = "google"
 
 [tool.ruff.lint.extend-per-file-ignores]
-"tests/**/*.py" = [
-  "S101",    # we can (and MUST!) use 'assert' in test files.
-  "ANN001",  # annotations for fixtures are sometimes a pain for test files.
-  "ARG001",  # sometimes fixtures are not physically used but have side-effects
-  "ARG002",  # as above
-  "TD003",
-  "FIX002",
-  "RUF012",
-  "SLF001",  # sometimes tests need to access private members
-  "PLE1205", # false positive: CategoryLogger has different signature than logging.Logger
-]
+"tests/**/*.py" = ["S101", "ANN001", "ARG001", "ARG002", "TD003", "FIX002", "RUF012", "SLF001", "PLE1205"]
 "app/managers/auth.py" = ["ERA001"]
 "app/resources/auth.py" = ["ERA001"]
 
-
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = [
-  "fastapi.Depends",
-  "fastapi.params.Depends",
-  "fastapi.Query",
-  "fastapi.params.Query",
-]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query"]
 
 [tool.ruff.lint.flake8-builtins]
 builtins-ignorelist = ["id"]
@@ -221,48 +149,21 @@ python_version = "3.10"
 exclude = ["app/migrations/"]
 
 [[tool.mypy.overrides]]
-disable_error_code = ["method-assign", "no-untyped-def", "attr-defined"]
 module = "tests.*"
+disable_error_code = ["method-assign", "no-untyped-def", "attr-defined"]
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = "decouple.*"
-
 [tool.pytest.ini_options]
-addopts = [
-  "-m",
-  "not rewrite",  # mark tests 'rewrite' that need work, and they wont be run
-  "--cov",
-  "--cov-report",
-  "term-missing",
-  "--cov-report",
-  "html",
-]
-filterwarnings = [
-  "ignore:'crypt' is deprecated:DeprecationWarning",
-  "ignore:ValidatedEmail.email is deprecated:DeprecationWarning",
-  "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:slowapi.extension",
-]
-markers = [
-  "unit: Unit tests",
-  "integration: Integration tests",
-  "rewrite: Tests need Rewriting",
-]
-testpaths = ["tests"]
 mock_use_standalone_module = true
-env = [
-  "I_READ_THE_DAMN_DOCS=true",
-  "ADMIN_PAGES_ENABLED=true",
-  "CACHE_ENABLED=true",
-  "LOG_FILENAME=test_api.log",
-  "METRICS_ENABLED=True",
-  "RATE_LIMIT_ENABLED=false",
-]
-
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
-
-
+addopts = ["-m", "not rewrite", "--cov", "--cov-report", "term-missing", "--cov-report", "html"]
+filterwarnings = ["ignore:'crypt' is deprecated:DeprecationWarning", "ignore:ValidatedEmail.email is deprecated:DeprecationWarning", "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:slowapi.extension"]
+markers = ["unit: Unit tests", "integration: Integration tests", "rewrite: Tests need Rewriting"]
+testpaths = ["tests"]
+env = ["I_READ_THE_DAMN_DOCS=true", "ADMIN_PAGES_ENABLED=true", "CACHE_ENABLED=true", "LOG_FILENAME=test_api.log", "METRICS_ENABLED=True", "RATE_LIMIT_ENABLED=false"]
 [tool.coverage.run]
 source = ["app"]
 omit = ["*/tests/*"]
@@ -271,9 +172,12 @@ concurrency = ["thread", "greenlet"]
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-include = ["app"]
-exclude = ["app/migrations"]
 reportMissingImports = true
 reportMissingTypeStubs = true
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
+include = ["app"]
+exclude = ["app/migrations"]
+
+[dependency-groups]
+dev = ["aiosmtpd>=1.4.6", "aiosqlite>=0.20.0", "faker>=30.8.2", "mock>=5.1.0", "mypy>=1.13.0", "poethepoet>=0.29.0", "pyfakefs>=5.7.1", "pymarkdownlnt>=0.9.24", "pytest>=8.3.3", "pytest-asyncio>=0.21.2", "pytest-clarity>=1.0.1", "pytest-cov>=6.0.0", "pytest-env>=1.1.5", "pytest-mock>=3.14.0", "pytest-randomly>=3.16.0", "pytest-reverse>=1.8.0", "pytest-sugar>=1.0.0", "pytest-watcher>=0.4.3", "ruff>=0.7.2", "mkdoc>=0.1", "mkdocs-git-revision-date-localized-plugin>=1.3.0", "mkdocs-latest-git-tag-plugin>=0.1.2", "mkdocs-material>=9.5.43", "mkdocs-minify-plugin>=0.8.0", "pymdown-extensions>=10.12", "pygments>=2.18.0", "types-passlib>=1.7.7.20240819", "asyncpg-stubs>=0.30.0", "github-changelog-md>=0.9.5", "mkdocstrings[python]>=0.26.2", "mkdocs-swagger-ui-tag", "ty>=0.0.5", "prek>=0.2.24", "types-redis>=4.6.0.20241004"]

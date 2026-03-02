@@ -156,6 +156,8 @@ class UserManager:
                         "application": f"{get_settings().api_title}",
                         "user": new_user["email"],
                         "base_url": get_settings().base_url,
+                        "frontend_url": get_settings().frontend_url
+                        or get_settings().base_url,
                         "name": user_full_name,
                         "verification": AuthManager.encode_verify_token(
                             user_do
