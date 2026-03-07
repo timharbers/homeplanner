@@ -7,6 +7,7 @@ import jwt
 from fastapi import (
     APIRouter,
     BackgroundTasks,
+    Body,
     Depends,
     HTTPException,
     Request,
@@ -14,7 +15,6 @@ from fastapi import (
 )
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.templating import _TemplateResponse
 
@@ -243,13 +243,25 @@ async def reset_password_form(
 @router.post(
     "/reset-password/",
     name="reset_password",
-    response_model=None,
+    response_model=PasswordResetResponse,
     status_code=status.HTTP_200_OK,
 )
 @rate_limited(RateLimits.RESET_PASSWORD_POST)
 async def reset_password(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_database)],
+    body: ResetPasswordRequest | None = Body(
+        default=None,
+        openapi_examples={
+            "reset_password": {
+                "summary": "Reset password with token",
+                "value": {
+                    "code": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "new_password": "myNewSecurePassword123",
+                },
+            }
+        },
+    ),
 ) -> dict[str, str] | _TemplateResponse:
     """Reset a user's password using the reset token.
 
@@ -331,18 +343,13 @@ async def reset_password(
             )
     else:
         # Handle JSON request (API)
-        try:
-            body = await request.json()
-            request_data = ResetPasswordRequest(**body)
-        except (ValueError, TypeError, ValidationError) as exc:
+        if body is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Invalid request data",
-            ) from exc
+                detail="Request body is required",
+            )
 
-        await AuthManager.reset_password(
-            request_data.code, request_data.new_password, session
-        )
+        await AuthManager.reset_password(body.code, body.new_password, session)
         return {"message": ResponseMessages.PASSWORD_RESET_SUCCESS}
 
 
