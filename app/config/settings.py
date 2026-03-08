@@ -143,6 +143,11 @@ class Settings(BaseSettings):
     # redis_enabled are True
     rate_limit_enabled: bool = False
 
+    # Resource quotas per household (0 = unlimited)
+    max_floors_per_household: int = 10
+    max_rooms_per_household: int = 40
+    max_tasks_per_household: int = 1000
+
     # gatekeeper settings!
     # this is to ensure that people read the damn instructions and changelogs
     i_read_the_damn_docs: bool = False

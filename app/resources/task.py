@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid as uuid_module
 from typing import Annotated
 from uuid import UUID
 
@@ -11,9 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database.db import get_database
+from app.database.quota import check_task_quota, get_user_household_id
 from app.managers.security import get_current_user
 from app.models.room import Room
 from app.models.task import Task, TaskStatus, task_dependencies
+from app.models.user import User
 from app.schemas.request.task import (
     AddDependencyRequest,
     CreateTaskRequest,
@@ -42,12 +45,20 @@ def _task_summary(task: Task) -> TaskSummary:
 
 
 async def _get_task_or_404(
-    db: AsyncSession, task_id: UUID, *, load_dependencies: bool = False
+    db: AsyncSession,
+    task_id: UUID,
+    household_id: uuid_module.UUID,
+    *,
+    load_dependencies: bool = False,
 ) -> Task:
     options = [selectinload(Task.rooms)]
     if load_dependencies:
         options.extend([selectinload(Task.depends_on), selectinload(Task.depended_by)])
-    stmt = select(Task).where(Task.id == task_id).options(*options)
+    stmt = (
+        select(Task)
+        .where(Task.id == task_id, Task.household_id == household_id)
+        .options(*options)
+    )
     task = (await db.execute(stmt)).scalar_one_or_none()
     if not task:
         raise HTTPException(
@@ -130,7 +141,6 @@ async def _unblock_dependent_tasks(db: AsyncSession, completed_task: Task) -> No
 
 @router.get(
     "",
-    dependencies=[Depends(get_current_user)],
     response_model=PaginatedTasksResponse,
     summary="Get all tasks",
     description=(
@@ -139,6 +149,7 @@ async def _unblock_dependent_tasks(db: AsyncSession, completed_task: Task) -> No
     ),
 )
 async def get_tasks(
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
     room_id: UUID | None = None,
     assigned_user_id: int | None = None,
@@ -152,7 +163,12 @@ async def get_tasks(
     page_size: int = 20,
 ) -> PaginatedTasksResponse:
     """List tasks with filtering and pagination."""
-    stmt = select(Task).options(selectinload(Task.rooms))
+    household_id = await get_user_household_id(db, user.id)
+    stmt = (
+        select(Task)
+        .where(Task.household_id == household_id)
+        .options(selectinload(Task.rooms))
+    )
     if room_id:
         stmt = stmt.join(Task.rooms).where(Room.id == room_id).distinct()
     if assigned_user_id:
@@ -195,7 +211,6 @@ async def get_tasks(
 
 @router.post(
     "",
-    dependencies=[Depends(get_current_user)],
     response_model=TaskResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create new task",
@@ -203,10 +218,15 @@ async def get_tasks(
 )
 async def create_task(
     task_data: CreateTaskRequest,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> TaskResponse:
     """Create a new task."""
+    household_id = await get_user_household_id(db, user.id)
+    await check_task_quota(db, household_id)
+
     task = Task(
+        household_id=household_id,
         title=task_data.title,
         description=task_data.description,
         priority=task_data.priority,
@@ -216,7 +236,11 @@ async def create_task(
     )
     if task_data.room_ids:
         rooms = (
-            await db.execute(select(Room).where(Room.id.in_(task_data.room_ids)))
+            await db.execute(
+                select(Room).where(
+                    Room.id.in_(task_data.room_ids), Room.household_id == household_id
+                )
+            )
         ).scalars().all()
         if len(rooms) != len(set(task_data.room_ids)):
             raise HTTPException(
@@ -226,7 +250,10 @@ async def create_task(
     if task_data.dependency_ids:
         dependencies = (
             await db.execute(
-                select(Task).where(Task.id.in_(task_data.dependency_ids))
+                select(Task).where(
+                    Task.id.in_(task_data.dependency_ids),
+                    Task.household_id == household_id,
+                )
             )
         ).scalars().all()
         if len(dependencies) != len(set(task_data.dependency_ids)):
@@ -249,28 +276,35 @@ async def create_task(
 
 @router.get(
     "/stats",
-    dependencies=[Depends(get_current_user)],
     response_model=TaskDashboardStats,
     summary="Get dashboard statistics",
     description="Fetch aggregated task counts for the household.",
 )
 async def get_dashboard_stats(
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> TaskDashboardStats:
     """Get task dashboard stats."""
+    household_id = await get_user_household_id(db, user.id)
     total_open = (
         await db.execute(
-            select(func.count()).where(Task.status != TaskStatus.done)
+            select(func.count()).where(
+                Task.household_id == household_id, Task.status != TaskStatus.done
+            )
         )
     ).scalar_one()
     total_blocked = (
         await db.execute(
-            select(func.count()).where(Task.status == TaskStatus.blocked)
+            select(func.count()).where(
+                Task.household_id == household_id, Task.status == TaskStatus.blocked
+            )
         )
     ).scalar_one()
     total_completed = (
         await db.execute(
-            select(func.count()).where(Task.status == TaskStatus.done)
+            select(func.count()).where(
+                Task.household_id == household_id, Task.status == TaskStatus.done
+            )
         )
     ).scalar_one()
     return TaskDashboardStats(
@@ -280,18 +314,19 @@ async def get_dashboard_stats(
 
 @router.get(
     "/suggestions",
-    dependencies=[Depends(get_current_user)],
     response_model=list[TaskSuggestion],
     summary="Get smart task suggestions",
     description="Fetch top 1–3 recommended tasks with reasoning.",
 )
 async def get_task_suggestions(
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> list[TaskSuggestion]:
     """Get task suggestions."""
+    household_id = await get_user_household_id(db, user.id)
     stmt = (
         select(Task)
-        .where(Task.status != TaskStatus.done)
+        .where(Task.household_id == household_id, Task.status != TaskStatus.done)
         .order_by(Task.priority.desc(), Task.created_at.asc())
         .limit(3)
         .options(selectinload(Task.rooms))
@@ -307,17 +342,18 @@ async def get_task_suggestions(
 
 @router.get(
     "/{task_id}",
-    dependencies=[Depends(get_current_user)],
     response_model=TaskDetailsResponse,
     summary="Get single task details",
     description="Fetch complete task information including rooms and dependencies.",
 )
 async def get_task(
     task_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> TaskDetailsResponse:
     """Get a single task."""
-    task = await _get_task_or_404(db, task_id, load_dependencies=True)
+    household_id = await get_user_household_id(db, user.id)
+    task = await _get_task_or_404(db, task_id, household_id, load_dependencies=True)
     response = TaskDetailsResponse.model_validate(task)
     response.dependencies = [_task_summary(dep) for dep in task.depends_on]
     return response
@@ -325,7 +361,6 @@ async def get_task(
 
 @router.put(
     "/{task_id}",
-    dependencies=[Depends(get_current_user)],
     response_model=TaskResponse,
     summary="Update existing task",
     description="Update any or all fields of an existing task.",
@@ -333,10 +368,12 @@ async def get_task(
 async def update_task(
     task_id: UUID,
     task_data: UpdateTaskRequest,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> TaskResponse:
     """Update a task."""
-    task = await _get_task_or_404(db, task_id, load_dependencies=True)
+    household_id = await get_user_household_id(db, user.id)
+    task = await _get_task_or_404(db, task_id, household_id, load_dependencies=True)
     status_changed_to_done = False
     if task_data.title is not None:
         task.title = task_data.title
@@ -356,7 +393,9 @@ async def update_task(
         if task_data.room_ids:
             rooms = (
                 await db.execute(
-                    select(Room).where(Room.id.in_(task_data.room_ids))
+                    select(Room).where(
+                        Room.id.in_(task_data.room_ids), Room.household_id == household_id
+                    )
                 )
             ).scalars().all()
             if len(rooms) != len(set(task_data.room_ids)):
@@ -372,7 +411,8 @@ async def update_task(
             dependencies = (
                 await db.execute(
                     select(Task).where(
-                        Task.id.in_(task_data.dependency_ids)
+                        Task.id.in_(task_data.dependency_ids),
+                        Task.household_id == household_id,
                     )
                 )
             ).scalars().all()
@@ -396,24 +436,24 @@ async def update_task(
 
 @router.delete(
     "/{task_id}",
-    dependencies=[Depends(get_current_user)],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete task",
     description="Permanently delete a task and all related records.",
 )
 async def delete_task(
     task_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> Response:
     """Delete a task."""
-    task = await _get_task_or_404(db, task_id, load_dependencies=True)
+    household_id = await get_user_household_id(db, user.id)
+    task = await _get_task_or_404(db, task_id, household_id, load_dependencies=True)
     await db.delete(task)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get(
     "/{task_id}/available-dependencies",
-    dependencies=[Depends(get_current_user)],
     response_model=list[TaskSummary],
     summary="Get available tasks for dependencies",
     description=(
@@ -422,10 +462,12 @@ async def delete_task(
 )
 async def get_available_dependencies(
     task_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> list[TaskSummary]:
     """Get available dependency tasks."""
-    await _get_task_or_404(db, task_id)
+    household_id = await get_user_household_id(db, user.id)
+    await _get_task_or_404(db, task_id, household_id)
     result = await db.execute(
         select(
             task_dependencies.c.task_id,
@@ -446,7 +488,9 @@ async def get_available_dependencies(
                 blocked_ids.add(dependent)
                 stack.append(dependent)
 
-    tasks = (await db.execute(select(Task))).scalars().all()
+    tasks = (
+        await db.execute(select(Task).where(Task.household_id == household_id))
+    ).scalars().all()
     return [
         _task_summary(task)
         for task in tasks
@@ -456,7 +500,6 @@ async def get_available_dependencies(
 
 @router.post(
     "/{task_id}/dependencies",
-    dependencies=[Depends(get_current_user)],
     status_code=status.HTTP_201_CREATED,
     summary="Add task dependency",
     description="Add a dependency where this task depends on another task.",
@@ -464,11 +507,13 @@ async def get_available_dependencies(
 async def add_task_dependency(
     task_id: UUID,
     request: AddDependencyRequest,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> Response:
     """Add a task dependency."""
-    task = await _get_task_or_404(db, task_id, load_dependencies=True)
-    dependency = await _get_task_or_404(db, request.depends_on_task_id)
+    household_id = await get_user_household_id(db, user.id)
+    task = await _get_task_or_404(db, task_id, household_id, load_dependencies=True)
+    dependency = await _get_task_or_404(db, request.depends_on_task_id, household_id)
     if await _would_create_cycle(db, task_id, request.depends_on_task_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -483,24 +528,25 @@ async def add_task_dependency(
 
 @router.delete(
     "/{task_id}/dependencies/{depends_on_task_id}",
-    dependencies=[Depends(get_current_user)],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove task dependency",
 )
 async def delete_task_dependency(
     task_id: UUID,
     depends_on_task_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> Response:
     """Remove a task dependency."""
-    await _get_task_or_404(db, task_id)
+    household_id = await get_user_household_id(db, user.id)
+    await _get_task_or_404(db, task_id, household_id)
     await db.execute(
         delete(task_dependencies).where(
             task_dependencies.c.task_id == task_id,
             task_dependencies.c.depends_on_task_id == depends_on_task_id,
         )
     )
-    task = await _get_task_or_404(db, task_id, load_dependencies=True)
+    task = await _get_task_or_404(db, task_id, household_id, load_dependencies=True)
     await _update_blocked_status(db, task)
     await db.flush()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -508,17 +554,18 @@ async def delete_task_dependency(
 
 @router.get(
     "/{task_id}/dependency-graph",
-    dependencies=[Depends(get_current_user)],
     response_model=TaskDependencyGraph,
     summary="Get task dependency graph",
     description="Fetch dependency graph data for visualization.",
 )
 async def get_task_dependency_graph(
     task_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> TaskDependencyGraph:
     """Get a task dependency graph."""
-    task = await _get_task_or_404(db, task_id, load_dependencies=True)
+    household_id = await get_user_household_id(db, user.id)
+    task = await _get_task_or_404(db, task_id, household_id, load_dependencies=True)
     return TaskDependencyGraph(
         depends_on=[_task_summary(dep) for dep in task.depends_on],
         depended_by=[_task_summary(dep) for dep in task.depended_by],
@@ -527,7 +574,6 @@ async def get_task_dependency_graph(
 
 @router.patch(
     "/{task_id}/status",
-    dependencies=[Depends(get_current_user)],
     response_model=TaskResponse,
     summary="Quick update task status",
     description="Mark a task as done from dashboard suggestions.",
@@ -535,6 +581,7 @@ async def get_task_dependency_graph(
 async def update_task_status(
     task_id: UUID,
     task_data: UpdateTaskStatusRequest,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> TaskResponse:
     """Update task status."""
@@ -543,7 +590,8 @@ async def update_task_status(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only 'done' status is supported",
         )
-    task = await _get_task_or_404(db, task_id)
+    household_id = await get_user_household_id(db, user.id)
+    task = await _get_task_or_404(db, task_id, household_id)
     task.status = TaskStatus.done
     await db.flush()
     await db.refresh(task)
