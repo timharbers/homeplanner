@@ -8,9 +8,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.db import get_database
+from app.database.quota import check_room_quota, get_user_household_id
 from app.managers.security import get_current_user
 from app.models.room import Room
 from app.models.task import Task, TaskStatus, task_rooms
+from app.models.user import User
 from app.schemas.request.room import CreateRoomRequest, UpdateRoomRequest
 from app.schemas.response.room import (
     RoomDetailsResponse,
@@ -23,7 +25,6 @@ router = APIRouter(tags=["Rooms"], prefix="/rooms")
 
 @router.get(
     "",
-    dependencies=[Depends(get_current_user)],
     response_model=list[RoomResponse],
     summary="Get household rooms",
     description=(
@@ -32,17 +33,20 @@ router = APIRouter(tags=["Rooms"], prefix="/rooms")
     ),
 )
 async def get_rooms(
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> list[RoomResponse]:
-    """Get all rooms."""
-    result = await db.execute(select(Room).order_by(Room.name))
+    """Get all rooms for the user's household."""
+    household_id = await get_user_household_id(db, user.id)
+    result = await db.execute(
+        select(Room).where(Room.household_id == household_id).order_by(Room.name)
+    )
     rooms = result.scalars().all()
     return [RoomResponse.model_validate(room) for room in rooms]
 
 
 @router.post(
     "",
-    dependencies=[Depends(get_current_user)],
     response_model=RoomResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create new room",
@@ -50,10 +54,15 @@ async def get_rooms(
 )
 async def create_room(
     room_data: CreateRoomRequest,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> RoomResponse:
     """Create a new room."""
+    household_id = await get_user_household_id(db, user.id)
+    await check_room_quota(db, household_id)
+
     room = Room(
+        household_id=household_id,
         name=room_data.name,
         color=room_data.color,
         floor=room_data.floor,
@@ -65,7 +74,6 @@ async def create_room(
 
 @router.get(
     "/{room_id}",
-    dependencies=[Depends(get_current_user)],
     response_model=RoomDetailsResponse,
     summary="Get single room details",
     description=(
@@ -75,10 +83,15 @@ async def create_room(
 )
 async def get_room(
     room_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> RoomDetailsResponse:
     """Get a single room."""
-    room = await db.get(Room, room_id)
+    household_id = await get_user_household_id(db, user.id)
+    result = await db.execute(
+        select(Room).where(Room.id == room_id, Room.household_id == household_id)
+    )
+    room = result.scalar_one_or_none()
     if not room:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
@@ -90,7 +103,6 @@ async def get_room(
 
 @router.put(
     "/{room_id}",
-    dependencies=[Depends(get_current_user)],
     response_model=RoomResponse,
     summary="Update room",
     description="Update room details including name, color, and floor.",
@@ -98,10 +110,15 @@ async def get_room(
 async def update_room(
     room_id: UUID,
     room_data: UpdateRoomRequest,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> RoomResponse:
     """Update a room."""
-    room = await db.get(Room, room_id)
+    household_id = await get_user_household_id(db, user.id)
+    result = await db.execute(
+        select(Room).where(Room.id == room_id, Room.household_id == household_id)
+    )
+    room = result.scalar_one_or_none()
     if not room:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
@@ -118,7 +135,6 @@ async def update_room(
 
 @router.delete(
     "/{room_id}",
-    dependencies=[Depends(get_current_user)],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete room",
     description=(
@@ -128,10 +144,15 @@ async def update_room(
 )
 async def delete_room(
     room_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> Response:
     """Delete a room."""
-    room = await db.get(Room, room_id)
+    household_id = await get_user_household_id(db, user.id)
+    result = await db.execute(
+        select(Room).where(Room.id == room_id, Room.household_id == household_id)
+    )
+    room = result.scalar_one_or_none()
     if not room:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
@@ -154,17 +175,21 @@ async def delete_room(
 
 @router.get(
     "/{room_id}/stats",
-    dependencies=[Depends(get_current_user)],
     response_model=RoomStatsResponse,
     summary="Get room statistics",
     description="Fetch aggregated task statistics for a specific room.",
 )
 async def get_room_stats(
     room_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
 ) -> RoomStatsResponse:
     """Get room statistics."""
-    room = await db.get(Room, room_id)
+    household_id = await get_user_household_id(db, user.id)
+    result = await db.execute(
+        select(Room).where(Room.id == room_id, Room.household_id == household_id)
+    )
+    room = result.scalar_one_or_none()
     if not room:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
@@ -204,5 +229,3 @@ async def get_room_stats(
         in_progress=in_progress,
         blocked=blocked,
     )
-
-
