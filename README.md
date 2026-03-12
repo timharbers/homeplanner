@@ -304,6 +304,19 @@ Tests can then be run from the checked out code with:
 $ pytest
 ```
 
+Once the application is running, you can explore the automatically generated
+OpenAPI documentation (including query parameters for the `GET /tasks` endpoint)
+at:
+
+- JSON schema: `http://localhost:8000/openapi.json`
+- Interactive docs (Swagger UI): `http://localhost:8000/docs`
+- Alternative ReDoc UI: `http://localhost:8000/redoc`
+
+For example, to filter tasks by multiple statuses, priorities, and rooms you can
+use:
+
+- `GET /tasks?statuses=not_started&statuses=blocked&priorities=1&priorities=3&room_ids=<uuid1>&room_ids=<uuid2>`
+
 It is possible to run either the Unit or Integration tests separately using
 `pytest -m unit` or `pytest -m integration`
 

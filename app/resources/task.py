@@ -151,11 +151,11 @@ async def _unblock_dependent_tasks(db: AsyncSession, completed_task: Task) -> No
 async def get_tasks(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
-    room_id: UUID | None = None,
+    room_ids: list[UUID] | None = None,
     assigned_user_id: int | None = None,
-    priority: int | None = None,
+    priorities: list[int] | None = None,
     difficulty: int | None = None,
-    status: TaskStatus | None = None,
+    statuses: list[TaskStatus] | None = None,
     blocked: bool | None = None,
     sort: str | None = None,
     order: str = "asc",
@@ -169,16 +169,16 @@ async def get_tasks(
         .where(Task.household_id == household_id)
         .options(selectinload(Task.rooms))
     )
-    if room_id:
-        stmt = stmt.join(Task.rooms).where(Room.id == room_id).distinct()
+    if room_ids:
+        stmt = stmt.join(Task.rooms).where(Room.id.in_(room_ids)).distinct()
     if assigned_user_id:
         stmt = stmt.where(Task.assigned_user_id == assigned_user_id)
-    if priority:
-        stmt = stmt.where(Task.priority == priority)
+    if priorities:
+        stmt = stmt.where(Task.priority.in_(priorities))
     if difficulty:
         stmt = stmt.where(Task.difficulty == difficulty)
-    if status:
-        stmt = stmt.where(Task.status == status)
+    if statuses:
+        stmt = stmt.where(Task.status.in_(statuses))
     if blocked is True:
         stmt = stmt.where(Task.status == TaskStatus.blocked)
     elif blocked is False:
