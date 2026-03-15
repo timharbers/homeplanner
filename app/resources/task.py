@@ -154,7 +154,7 @@ async def get_tasks(
     room_ids: list[UUID] | None = Query(default=None),
     assigned_user_id: int | None = None,
     priorities: list[int] | None = Query(default=None),
-    difficulty: int | None = None,
+    difficulties: list[int] | None = Query(default=None),
     statuses: list[TaskStatus] | None = Query(default=None),
     blocked: bool | None = None,
     sort: str | None = None,
@@ -175,8 +175,8 @@ async def get_tasks(
         stmt = stmt.where(Task.assigned_user_id == assigned_user_id)
     if priorities:
         stmt = stmt.where(Task.priority.in_(priorities))
-    if difficulty:
-        stmt = stmt.where(Task.difficulty == difficulty)
+    if difficulties:
+        stmt = stmt.where(Task.difficulty.in_(difficulties))
     if statuses:
         stmt = stmt.where(Task.status.in_(statuses))
     if blocked is True:
