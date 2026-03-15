@@ -6,7 +6,7 @@ import uuid as uuid_module
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -151,11 +151,11 @@ async def _unblock_dependent_tasks(db: AsyncSession, completed_task: Task) -> No
 async def get_tasks(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_database)],
-    room_ids: list[UUID] | None = None,
+    room_ids: list[UUID] | None = Query(default=None),
     assigned_user_id: int | None = None,
-    priorities: list[int] | None = None,
+    priorities: list[int] | None = Query(default=None),
     difficulty: int | None = None,
-    statuses: list[TaskStatus] | None = None,
+    statuses: list[TaskStatus] | None = Query(default=None),
     blocked: bool | None = None,
     sort: str | None = None,
     order: str = "asc",
