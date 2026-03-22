@@ -142,8 +142,8 @@ class TestTaskRoutes:
         token = AuthManager.encode_token(user)
 
         # Create rooms in the same household
-        kitchen = Room(name="Kitchen", order=1, household_id=household.id)
-        living = Room(name="Living", order=2, household_id=household.id)
+        kitchen = Room(name="Kitchen", household_id=household.id)
+        living = Room(name="Living", household_id=household.id)
         other_household = Household(name="Other", owner_id=user.id)
 
         test_db.add_all([kitchen, living, other_household])
@@ -195,4 +195,48 @@ class TestTaskRoutes:
         assert "living task" in titles
         # Should not leak tasks from another household
         assert "other household task" not in titles
+
+    async def test_get_available_dependencies_includes_rooms(
+        self, client: AsyncClient, test_db: AsyncSession
+    ) -> None:
+        """Ensure GET /tasks/{id}/available-dependencies returns rooms on TaskSummary."""
+        user, household = await self._create_user_and_household(test_db)
+        token = AuthManager.encode_token(user)
+
+        kitchen = Room(name="Kitchen", household_id=household.id)
+        test_db.add(kitchen)
+        await test_db.commit()
+        await test_db.refresh(kitchen)
+
+        task_a = await self._create_task(
+            test_db,
+            household_id=household.id,
+            title="task without room",
+            priority=1,
+            difficulty=1,
+            status=TaskStatus.not_started,
+        )
+        await self._create_task(
+            test_db,
+            household_id=household.id,
+            title="task with room",
+            priority=1,
+            difficulty=1,
+            status=TaskStatus.not_started,
+            room=kitchen,
+        )
+
+        response = await client.get(
+            f"/tasks/{task_a.id}/available-dependencies",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        items = response.json()
+        by_title = {t["title"]: t for t in items}
+        assert "task with room" in by_title
+        room_task = by_title["task with room"]
+        assert len(room_task["rooms"]) == 1
+        assert room_task["rooms"][0]["id"] == str(kitchen.id)
+        assert room_task["rooms"][0]["name"] == "Kitchen"
 

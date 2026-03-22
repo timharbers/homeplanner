@@ -19,6 +19,7 @@ class TaskSummary(BaseModel):
     status: TaskStatus
     priority: int
     difficulty: int
+    rooms: list[RoomResponse] = Field(default_factory=list)
 
 
 class TaskResponse(BaseModel):

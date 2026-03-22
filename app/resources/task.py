@@ -53,7 +53,12 @@ async def _get_task_or_404(
 ) -> Task:
     options = [selectinload(Task.rooms)]
     if load_dependencies:
-        options.extend([selectinload(Task.depends_on), selectinload(Task.depended_by)])
+        options.extend(
+            [
+                selectinload(Task.depends_on).selectinload(Task.rooms),
+                selectinload(Task.depended_by).selectinload(Task.rooms),
+            ]
+        )
     stmt = (
         select(Task)
         .where(Task.id == task_id, Task.household_id == household_id)
@@ -489,7 +494,11 @@ async def get_available_dependencies(
                 stack.append(dependent)
 
     tasks = (
-        await db.execute(select(Task).where(Task.household_id == household_id))
+        await db.execute(
+            select(Task)
+            .where(Task.household_id == household_id)
+            .options(selectinload(Task.rooms))
+        )
     ).scalars().all()
     return [
         _task_summary(task)
